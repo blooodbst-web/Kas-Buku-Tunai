@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Kas Buku Tunai | Premium App</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#0f172a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <style>
     /* ================= CSS VARIABLES & THEMES ================= */
     :root {
@@ -148,6 +150,22 @@
     .cat-tag { background: var(--input-bg); border: 1px solid var(--card-border); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
     .cat-tag button { background: none; border: none; color: var(--danger); cursor: pointer; }
 
+
+    .header-actions { display:flex; align-items:center; gap:10px; }
+    .install-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text); padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+    .offline-badge { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+
+    /* Offline icon fallback (no external icon font dependency) */
+    i.fas, i.far { font-style: normal; width: 1.25em; display: inline-flex; justify-content: center; }
+    .fa-wallet::before{content:'💼';}.fa-home::before{content:'🏠';}.fa-exchange-alt::before{content:'🔁';}.fa-chart-pie::before{content:'📊';}
+    .fa-cog::before{content:'⚙️';}.fa-moon::before{content:'🌙';}.fa-sun::before{content:'☀️';}.fa-bullseye::before{content:'🎯';}
+    .fa-arrow-down::before{content:'⬇️';}.fa-arrow-up::before{content:'⬆️';}.fa-chart-line::before{content:'📈';}.fa-clock::before{content:'🕒';}
+    .fa-edit::before{content:'✏️';}.fa-check::before{content:'✅';}.fa-list::before{content:'📋';}.fa-file-excel::before{content:'📄';}
+    .fa-sliders-h::before{content:'🎚️';}.fa-plus::before{content:'➕';}.fa-database::before{content:'🗄️';}.fa-download::before{content:'⬇️';}
+    .fa-upload::before{content:'⬆️';}.fa-trash-alt::before{content:'🗑️';}.fa-exclamation-triangle::before{content:'⚠️';}.fa-exclamation-circle::before{content:'❗';}
+    .fa-info-circle::before{content:'ℹ️';}.fa-search::before{content:'🔎';}.fa-calendar::before{content:'📅';}.fa-trash::before{content:'🗑️';}
+    .fa-save::before{content:'💾';}.fa-times::before{content:'✖';}.fa-wifi::before{content:'📡';}
+
     /* ================= RESPONSIVE FIXES ================= */
     @media (max-width: 1024px) {
       .sidebar { width: 80px; padding: 24px 12px; } 
@@ -170,7 +188,9 @@
       .main-content { margin-left: 0; padding: 24px 20px; padding-bottom: 120px; }
       
       header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 24px;} 
-      .theme-toggle { position: absolute; top: 24px; right: 20px; }
+      .header-actions { position: absolute; top: 20px; right: 20px; }
+      .install-btn { padding: 8px 10px; font-size: .75rem; }
+      .theme-toggle { width: 42px; height: 42px; }
       
       .fab { display: flex; align-items: center; justify-content: center; }
       
@@ -209,7 +229,11 @@
         <h2 id="greetingText">Halo!</h2>
         <p>Ringkasan keuangan Anda hari ini.</p>
       </div>
+      <div class="header-actions">
+      <button class="install-btn" id="installBtn" title="Install App" style="display:none"><i class="fas fa-download"></i> Install</button>
+      <span class="offline-badge" id="offlineBadge" style="display:none"><i class="fas fa-wifi"></i> Offline</span>
       <button class="theme-toggle" id="themeToggle" title="Ganti Tema"><i class="fas fa-moon"></i></button>
+      </div>
     </header>
 
     <!-- ================= VIEW 1: DASHBOARD ================= -->
@@ -452,8 +476,6 @@ let budgetLimit = Math.max(0, parseInt(localStorage.getItem('kasBudget'), 10) ||
 let customCatIn = sanitizeCategoryList(safeJsonParse('katIn', defaultCatIn), defaultCatIn);
 let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), defaultCatOut);
 
-let expenseChartInst = null; 
-let flowChartInst = null; 
 let editId = null;
 
 document.getElementById('tanggal').valueAsDate = new Date();
@@ -499,6 +521,91 @@ themeToggle.addEventListener('click', () => {
 
 function updateThemeIcon() { themeToggle.innerHTML = currentTheme === 'dark' ? '<i class="fas fa-sun" style="color:#fbbf24;"></i>' : '<i class="fas fa-moon" style="color:#64748b;"></i>'; }
 function getChartTextColor() { return currentTheme === 'light' ? '#475569' : '#cbd5e1'; }
+
+function clearCanvas(canvas) {
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+  canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  return { ctx, width: rect.width, height: rect.height };
+}
+
+function drawLineChart(canvas, labels, inVals, outVals) {
+  const { ctx, width, height } = clearCanvas(canvas);
+  const pad = { top: 16, right: 12, bottom: 26, left: 40 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const maxVal = Math.max(1, ...inVals, ...outVals);
+
+  ctx.strokeStyle = 'rgba(148,163,184,0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (innerH * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
+  }
+
+  const drawSeries = (vals, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    vals.forEach((v, i) => {
+      const x = pad.left + (innerW * i / (vals.length - 1 || 1));
+      const y = pad.top + innerH - ((v / maxVal) * innerH);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+
+  drawSeries(inVals, '#10b981');
+  drawSeries(outVals, '#ef4444');
+
+  ctx.fillStyle = getChartTextColor();
+  ctx.font = '11px Inter, sans-serif';
+  labels.forEach((lb, i) => {
+    const x = pad.left + (innerW * i / (labels.length - 1 || 1));
+    ctx.fillText(lb, x - 12, height - 8);
+  });
+}
+
+function drawDoughnutChart(canvas, labels, values) {
+  const { ctx, width, height } = clearCanvas(canvas);
+  const total = values.reduce((a, b) => a + b, 0);
+  if (!total) {
+    ctx.fillStyle = getChartTextColor();
+    ctx.font = '600 14px Inter, sans-serif';
+    ctx.fillText('Belum ada pengeluaran di periode ini', 16, height / 2);
+    return;
+  }
+  const colors = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#3b82f6','#8b5cf6','#ec4899','#64748b'];
+  const cx = width * 0.35; const cy = height / 2;
+  const radius = Math.min(width, height) * 0.28;
+  let start = -Math.PI / 2;
+  values.forEach((val, i) => {
+    const angle = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, start, start + angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    start += angle;
+  });
+  ctx.beginPath();
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim() || '#111827';
+  ctx.arc(cx, cy, radius * 0.58, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = getChartTextColor();
+  ctx.font = '600 12px Inter, sans-serif';
+  labels.forEach((lb, i) => {
+    const y = 24 + (i * 18);
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(width * 0.62, y - 8, 10, 10);
+    ctx.fillStyle = getChartTextColor();
+    ctx.fillText(`${lb}: ${formatRp(values[i])}`, width * 0.65, y);
+  });
+}
 
 // ────────────────────────────────────────────────
 // UTILS & ALERTS
@@ -592,9 +699,9 @@ function updateDashboard() {
 }
 
 function renderFlowChart() {
-  const ctx = document.getElementById('flowChart').getContext('2d');
-  if(flowChartInst) flowChartInst.destroy();
-  
+  const canvas = document.getElementById('flowChart');
+  if (!canvas) return;
+
   const labels =[]; const dataIn =[]; const dataOut =[];
   for(let i=6; i>=0; i--) {
     const d = new Date();
@@ -606,14 +713,7 @@ function renderFlowChart() {
     dataIn.push(dayData.filter(x => x.jenis === 'in').reduce((a,b)=>a+b.nominal, 0));
     dataOut.push(dayData.filter(x => x.jenis === 'out').reduce((a,b)=>a+b.nominal, 0));
   }
-  
-  flowChartInst = new Chart(ctx, { 
-    type: 'line', data: { labels, datasets:[ 
-      { label: 'Pemasukan', data: dataIn, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3 }, 
-      { label: 'Pengeluaran', data: dataOut, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3 } 
-    ]}, 
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: getChartTextColor() } } }, scales: { x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }, y: { ticks: { color: getChartTextColor(), callback: v => 'Rp'+(v/1000)+'k' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } } } } 
-  });
+  drawLineChart(canvas, labels, dataIn, dataOut);
 }
 
 // ────────────────────────────────────────────────
@@ -742,12 +842,10 @@ function updateReports() {
   document.getElementById('rekapSelisih').style.color = (masuk - keluar) < 0 ? 'var(--danger)' : 'var(--text)';
   document.getElementById('judulPeriode').textContent = { semua:'Semua Data', hari:'Hari Ini', minggu:'Minggu Ini', bulan:'Bulan Ini' }[v];
 
-  const ctx = document.getElementById('expenseChart').getContext('2d');
-  if(expenseChartInst) expenseChartInst.destroy();
+  const canvas = document.getElementById('expenseChart');
   const filteredOut = filtered.filter(d => d.jenis === 'out');
   const catMap = {}; filteredOut.forEach(item => { catMap[item.kategori] = (catMap[item.kategori] || 0) + item.nominal; });
-  
-  expenseChartInst = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catMap), datasets:[{ data: Object.values(catMap), backgroundColor:['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#3b82f6','#8b5cf6','#ec4899','#64748b'], borderWidth: 0, hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: getChartTextColor(), usePointStyle: true } }, tooltip: { callbacks: { label: function(c) { return ' ' + formatRp(c.raw); } } } } } });
+  drawDoughnutChart(canvas, Object.keys(catMap), Object.values(catMap));
 }
 
 function exportToCSV() {
@@ -848,9 +946,45 @@ function confirmClearAll() {
 document.getElementById('typeIn').addEventListener('change', updateFormUI);
 document.getElementById('typeOut').addEventListener('change', updateFormUI);
 
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+const offlineBadge = document.getElementById('offlineBadge');
+
+function updateOnlineStatus() {
+  offlineBadge.style.display = navigator.onLine ? 'none' : 'inline-flex';
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('resize', () => refreshCurrentView());
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-flex';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      showToast('Service Worker gagal didaftarkan', 'danger');
+    });
+  });
+}
+
 // FIRST LOAD
 updateFormUI();
 updateDashboard();
+updateOnlineStatus();
+
 </script>
 </body>
 </html>
