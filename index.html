@@ -386,11 +386,71 @@
 // ────────────────────────────────────────────────
 // APP STATE & STORAGE
 // ────────────────────────────────────────────────
-let data = JSON.parse(localStorage.getItem('kasBukuTunai')) ||[];
-let budgetLimit = parseInt(localStorage.getItem('kasBudget')) || 0;
+const defaultCatIn = ["Gaji", "Penjualan", "Pemberian", "Lain-lain"];
+const defaultCatOut = ["Makan", "Transportasi", "Tagihan", "Utang", "Lain-lain"];
 
-let customCatIn = JSON.parse(localStorage.getItem('katIn')) ||["Gaji", "Penjualan", "Pemberian", "Lain-lain"];
-let customCatOut = JSON.parse(localStorage.getItem('katOut')) ||["Makan", "Transportasi", "Tagihan", "Utang", "Lain-lain"];
+function safeJsonParse(key, fallback) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function parseDateLocal(value) {
+  if (!value || typeof value !== 'string') return null;
+  const parts = value.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function normalizeNominal(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n);
+}
+
+function escapeHTML(text) {
+  const node = document.createElement('div');
+  node.textContent = String(text ?? '');
+  return node.innerHTML;
+}
+
+function normalizeTransaction(item) {
+  if (!item || typeof item !== 'object') return null;
+  const jenis = item.jenis === 'in' ? 'in' : (item.jenis === 'out' ? 'out' : null);
+  const tanggalObj = parseDateLocal(item.tanggal);
+  const nominal = normalizeNominal(item.nominal);
+  const keterangan = (item.keterangan || '').toString().trim();
+  const kategori = (item.kategori || '').toString().trim();
+  if (!jenis || !tanggalObj || !nominal || !keterangan || !kategori) return null;
+  return {
+    id: Number.isFinite(Number(item.id)) ? Number(item.id) : Date.now(),
+    jenis,
+    keterangan,
+    kategori,
+    nominal,
+    tanggal: item.tanggal
+  };
+}
+
+function sanitizeCategoryList(list, fallback) {
+  if (!Array.isArray(list)) return [...fallback];
+  const cleaned = list
+    .map(item => (item || '').toString().trim())
+    .filter(Boolean);
+  return cleaned.length ? [...new Set(cleaned)] : [...fallback];
+}
+
+let data = (safeJsonParse('kasBukuTunai', []) || [])
+  .map(normalizeTransaction)
+  .filter(Boolean);
+let budgetLimit = Math.max(0, parseInt(localStorage.getItem('kasBudget'), 10) || 0);
+
+let customCatIn = sanitizeCategoryList(safeJsonParse('katIn', defaultCatIn), defaultCatIn);
+let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), defaultCatOut);
 
 let expenseChartInst = null; 
 let flowChartInst = null; 
@@ -412,7 +472,7 @@ document.getElementById('greetingText').innerText = greeting;
 function switchTab(tabId) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.remove('active');
-    if(btn.getAttribute('onclick').includes(`'${tabId}'`)) btn.classList.add('active');
+    if (btn.getAttribute('onclick')?.includes(`'${tabId}'`)) btn.classList.add('active');
   });
   document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
   document.getElementById('view-' + tabId).classList.add('active');
@@ -481,7 +541,8 @@ function updateDashboard() {
 
   const now = new Date();
   const monthData = data.filter(d => {
-    const dt = new Date(d.tanggal); return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    const dt = parseDateLocal(d.tanggal);
+    return dt && dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
   });
   const mIn = monthData.filter(d => d.jenis === 'in').reduce((a,b) => a+b.nominal, 0);
   const mOut = monthData.filter(d => d.jenis === 'out').reduce((a,b) => a+b.nominal, 0);
@@ -508,7 +569,11 @@ function updateDashboard() {
 
   // RECENT TRANS
   const recList = document.getElementById('recentTransactions'); recList.innerHTML = '';
-  const sorted = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).slice(0, 5);
+  const sorted = [...data].sort((a, b) => {
+    const dA = parseDateLocal(a.tanggal);
+    const dB = parseDateLocal(b.tanggal);
+    return (dB?.getTime() || 0) - (dA?.getTime() || 0);
+  }).slice(0, 5);
   
   if(sorted.length === 0) {
     recList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat transaksi</p>`;
@@ -517,7 +582,7 @@ function updateDashboard() {
       recList.innerHTML += `
         <div class="trans ${item.jenis}" style="padding: 14px; margin-bottom: 10px;">
           <div class="trans-header">
-            <div class="trans-desc" style="font-size: 0.95rem;">${item.keterangan}</div>
+            <div class="trans-desc" style="font-size: 0.95rem;">${escapeHTML(item.keterangan)}</div>
             <div class="trans-amount ${item.jenis}" style="font-size: 1.05rem;">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
           </div>
         </div>`;
@@ -532,7 +597,9 @@ function renderFlowChart() {
   
   const labels =[]; const dataIn =[]; const dataOut =[];
   for(let i=6; i>=0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     labels.push(d.toLocaleDateString('id-ID', {day:'numeric', month:'short'}));
     const dayData = data.filter(x => x.tanggal === dateStr);
@@ -557,7 +624,11 @@ function updateTransactions() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   listEl.innerHTML = '';
   
-  let filtered = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+  let filtered = [...data].sort((a, b) => {
+    const dA = parseDateLocal(a.tanggal);
+    const dB = parseDateLocal(b.tanggal);
+    return (dB?.getTime() || 0) - (dA?.getTime() || 0);
+  });
   if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search));
 
   if (filtered.length === 0) { 
@@ -568,11 +639,11 @@ function updateTransactions() {
     listEl.innerHTML += `
       <div class="trans ${item.jenis}">
         <div class="trans-header">
-          <div class="trans-desc">${item.keterangan}</div>
+          <div class="trans-desc">${escapeHTML(item.keterangan)}</div>
           <div class="trans-amount ${item.jenis}">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
         </div>
         <div class="trans-footer">
-          <div><span class="trans-badge">${item.kategori}</span> <span style="margin-left:8px;"><i class="far fa-calendar"></i> ${new Date(item.tanggal).toLocaleDateString('id-ID')}</span></div>
+          <div><span class="trans-badge">${escapeHTML(item.kategori)}</span> <span style="margin-left:8px;"><i class="far fa-calendar"></i> ${parseDateLocal(item.tanggal)?.toLocaleDateString('id-ID') || '-'}</span></div>
           <div class="trans-actions">
             <button class="btn-edit-icon" onclick="editData(${item.id})"><i class="fas fa-edit"></i></button>
             <button class="btn-del-icon" onclick="hapusData(${item.id})"><i class="fas fa-trash"></i></button>
@@ -601,8 +672,13 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
   const jenis = document.querySelector('input[name="jenis"]:checked').value;
   const keterangan = document.getElementById('keterangan').value.trim();
   const kategori = document.getElementById('kategori').value;
-  const nominal = parseInt(document.getElementById('nominal').value);
+  const nominal = normalizeNominal(document.getElementById('nominal').value);
   const tanggal = document.getElementById('tanggal').value;
+
+  if (!keterangan || !kategori || !tanggal || !nominal) {
+    showToast('Lengkapi form dengan benar!', 'danger');
+    return;
+  }
 
   if (editId) {
     const idx = data.findIndex(d => d.id === editId);
@@ -641,11 +717,22 @@ function updateReports() {
   const v = document.getElementById('periodeFilter').value;
   const now = new Date(); let start, end;
   if (v === 'hari') { start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); end = new Date(start); end.setHours(23,59,59); } 
-  else if (v === 'minggu') { start = new Date(now); start.setDate(now.getDate() - now.getDay() + 1); start.setHours(0,0,0,0); end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59); } 
+  else if (v === 'minggu') {
+    const currentDay = now.getDay() || 7;
+    start = new Date(now);
+    start.setDate(now.getDate() - (currentDay - 1));
+    start.setHours(0,0,0,0);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23,59,59);
+  } 
   else if (v === 'bulan') { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23,59,59); } 
   else { start = new Date(2000, 0, 1); end = new Date(2100, 11, 31); }
   
-  const filtered = data.filter(item => { const d = new Date(item.tanggal); return d >= start && d <= end; });
+  const filtered = data.filter(item => {
+    const d = parseDateLocal(item.tanggal);
+    return d && d >= start && d <= end;
+  });
   const masuk = filtered.filter(d => d.jenis === 'in').reduce((a,b) => a + b.nominal, 0);
   const keluar = filtered.filter(d => d.jenis === 'out').reduce((a,b) => a + b.nominal, 0);
   
@@ -687,16 +774,25 @@ function saveBudget() {
 function renderCategories() {
   const inDiv = document.getElementById('listCatIn'); inDiv.innerHTML = '';
   const outDiv = document.getElementById('listCatOut'); outDiv.innerHTML = '';
-  customCatIn.forEach((cat, idx) => { inDiv.innerHTML += `<div class="cat-tag">${cat} <button onclick="delCategory('in', ${idx})"><i class="fas fa-times"></i></button></div>`; });
-  customCatOut.forEach((cat, idx) => { outDiv.innerHTML += `<div class="cat-tag">${cat} <button onclick="delCategory('out', ${idx})"><i class="fas fa-times"></i></button></div>`; });
+  customCatIn.forEach((cat, idx) => { inDiv.innerHTML += `<div class="cat-tag">${escapeHTML(cat)} <button onclick="delCategory('in', ${idx})"><i class="fas fa-times"></i></button></div>`; });
+  customCatOut.forEach((cat, idx) => { outDiv.innerHTML += `<div class="cat-tag">${escapeHTML(cat)} <button onclick="delCategory('out', ${idx})"><i class="fas fa-times"></i></button></div>`; });
   updateFormUI();
 }
 
 function addCategory(jenis) {
   const input = document.getElementById(jenis === 'in' ? 'newCatIn' : 'newCatOut');
-  const val = input.value.trim(); if(!val) return;
-  if(jenis === 'in') { if(customCatIn.includes(val)) return showToast('Sudah ada!', 'danger'); customCatIn.push(val); localStorage.setItem('katIn', JSON.stringify(customCatIn)); } 
-  else { if(customCatOut.includes(val)) return showToast('Sudah ada!', 'danger'); customCatOut.push(val); localStorage.setItem('katOut', JSON.stringify(customCatOut)); }
+  const val = input.value.trim();
+  if(!val) return;
+  const normalizedVal = val.toLowerCase();
+  if(jenis === 'in') {
+    if(customCatIn.some(item => item.toLowerCase() === normalizedVal)) return showToast('Sudah ada!', 'danger');
+    customCatIn.push(val);
+    localStorage.setItem('katIn', JSON.stringify(customCatIn));
+  } else {
+    if(customCatOut.some(item => item.toLowerCase() === normalizedVal)) return showToast('Sudah ada!', 'danger');
+    customCatOut.push(val);
+    localStorage.setItem('katOut', JSON.stringify(customCatOut));
+  }
   input.value = ''; renderCategories(); showToast('Ditambahkan');
 }
 
@@ -718,9 +814,17 @@ function restoreData(event) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const parsed = JSON.parse(e.target.result); if(!parsed.data) throw new Error();
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.data) throw new Error();
+      const restoredData = (parsed.data || []).map(normalizeTransaction).filter(Boolean);
+      const restoredCatIn = sanitizeCategoryList(parsed.customCatIn || customCatIn, defaultCatIn);
+      const restoredCatOut = sanitizeCategoryList(parsed.customCatOut || customCatOut, defaultCatOut);
+      const restoredBudget = Math.max(0, parseInt(parsed.budgetLimit, 10) || 0);
       showConfirm("Peringatan Restore!", "Data Anda akan ditimpa dengan file ini. Lanjut?", () => {
-        data = parsed.data; customCatIn = parsed.customCatIn || customCatIn; customCatOut = parsed.customCatOut || customCatOut; budgetLimit = parsed.budgetLimit || 0;
+        data = restoredData;
+        customCatIn = restoredCatIn;
+        customCatOut = restoredCatOut;
+        budgetLimit = restoredBudget;
         localStorage.setItem('kasBukuTunai', JSON.stringify(data)); localStorage.setItem('katIn', JSON.stringify(customCatIn)); localStorage.setItem('katOut', JSON.stringify(customCatOut)); localStorage.setItem('kasBudget', budgetLimit);
         showToast('Restore Berhasil!', 'success'); setTimeout(() => location.reload(), 1500);
       });
@@ -731,7 +835,12 @@ function restoreData(event) {
 
 function confirmClearAll() {
   showConfirm("HAPUS PERMANEN?", "Semua data akan hilang selamanya!", () => {
-    localStorage.clear(); showToast('Data dihapus...', 'danger'); setTimeout(() => location.reload(), 1000);
+    localStorage.removeItem('kasBukuTunai');
+    localStorage.removeItem('katIn');
+    localStorage.removeItem('katOut');
+    localStorage.removeItem('kasBudget');
+    showToast('Data dihapus...', 'danger');
+    setTimeout(() => location.reload(), 1000);
   });
 }
 
