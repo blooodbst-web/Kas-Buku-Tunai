@@ -28,6 +28,8 @@
 
     * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end)); color: var(--text); min-height: 100vh; transition: background 0.4s, color 0.4s; overflow-x: hidden; }
+    body::before { content:''; position: fixed; inset: -20% -10%; pointer-events:none; background: radial-gradient(circle at 20% 20%, rgba(96,165,250,.14), transparent 45%), radial-gradient(circle at 80% 30%, rgba(139,92,246,.12), transparent 40%), radial-gradient(circle at 50% 80%, rgba(16,185,129,.10), transparent 45%); animation: ambientMove 16s ease-in-out infinite alternate; z-index: -1; }
+    @keyframes ambientMove { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 1%, 0) scale(1.06); } }
 
     /* ================= LAYOUTING ================= */
     .app-container { display: flex; min-height: 100vh; }
@@ -63,10 +65,12 @@
 
     /* ================= COMPONENTS (CARDS) ================= */
     .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
-    .card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--card-border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.2s; }
-    .card:hover { transform: translateY(-4px); }
+    .card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--card-border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.2s, box-shadow .25s; transform-style: preserve-3d; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(59,130,246,.18); }
     .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
     .card .amount { font-size: 2.2rem; font-weight: 800; word-break: break-word; letter-spacing: -0.5px;}
+    .amount.pulse { animation: amountPulse .45s ease; }
+    @keyframes amountPulse { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
     
     .card.balance { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: none; }
     .card.balance h3 { color: rgba(255,255,255,0.9); }
@@ -116,6 +120,8 @@
     .btn, .nav-btn, .theme-toggle, .fab, .install-btn { position: relative; overflow: hidden; }
     .ripple { position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.35); animation:ripple .5s linear; pointer-events:none; }
     @keyframes ripple { to { transform:scale(4); opacity:0; } }
+    .spark { position: fixed; width: 8px; height: 8px; border-radius: 50%; pointer-events:none; z-index: 99999; animation: sparkFly .65s ease-out forwards; }
+    @keyframes sparkFly { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
 
     /* History & Lists */
     .history-container { max-height: 500px; overflow-y: auto; padding-right: 8px; }
@@ -506,6 +512,7 @@ let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), 
 
 let editId = null;
 let transFilterType = "all";
+let prevDashboard = { saldo: 0, masuk: 0, keluar: 0 };
 
 document.getElementById('tanggal').valueAsDate = new Date();
 
@@ -695,6 +702,38 @@ function calcStreakDays(items) {
   return streak;
 }
 
+function animateCurrency(el, from, to) {
+  if (!el) return;
+  const start = performance.now();
+  const duration = 420;
+  const delta = to - from;
+  el.classList.remove('pulse');
+  requestAnimationFrame(() => el.classList.add('pulse'));
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatRp(Math.round(from + (delta * eased)));
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function spawnSparkBurst(x, y, colors = ['#60a5fa', '#10b981', '#f59e0b', '#8b5cf6']) {
+  for (let i = 0; i < 14; i++) {
+    const spark = document.createElement('span');
+    spark.className = 'spark';
+    spark.style.left = `${x}px`;
+    spark.style.top = `${y}px`;
+    spark.style.background = colors[i % colors.length];
+    const angle = (Math.PI * 2 * i) / 14;
+    const dist = 28 + Math.random() * 32;
+    spark.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    spark.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(spark);
+    setTimeout(() => spark.remove(), 700);
+  }
+}
+
 function showToast(msg, type='success') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div'); toast.className = `toast ${type}`;
@@ -726,7 +765,6 @@ function refreshCurrentView() {
 function updateDashboard() {
   const totalMasuk = data.filter(d => d.jenis === 'in').reduce((a,b) => a + b.nominal, 0);
   const totalKeluar = data.filter(d => d.jenis === 'out').reduce((a,b) => a + b.nominal, 0);
-  document.getElementById('dashSaldo').textContent = formatRp(totalMasuk - totalKeluar);
 
   const now = new Date();
   const monthData = data.filter(d => {
@@ -739,8 +777,11 @@ function updateDashboard() {
   const insight = topOut ? `Kategori terbesar: ${topOut[0]} (${formatRp(topOut[1])})` : 'Belum ada pengeluaran bulan ini.';
   document.getElementById('insightText').textContent = insight;
   
-  document.getElementById('dashMasuk').textContent = formatRp(mIn);
-  document.getElementById('dashKeluar').textContent = formatRp(mOut);
+  const saldoNow = totalMasuk - totalKeluar;
+  animateCurrency(document.getElementById('dashSaldo'), prevDashboard.saldo, saldoNow);
+  animateCurrency(document.getElementById('dashMasuk'), prevDashboard.masuk, mIn);
+  animateCurrency(document.getElementById('dashKeluar'), prevDashboard.keluar, mOut);
+  prevDashboard = { saldo: saldoNow, masuk: mIn, keluar: mOut };
 
   // BUDGET BAR
   const wrapper = document.getElementById('budgetCardWrapper');
@@ -880,6 +921,9 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
   } else {
     data.push({ id: Date.now(), jenis, keterangan, kategori, nominal, tanggal });
     showToast('Tersimpan!', 'success');
+    const btnRect = document.getElementById('btnSubmit').getBoundingClientRect();
+    spawnSparkBurst(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+    if (navigator.vibrate) navigator.vibrate(25);
     document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = '';
   }
   save(); 
@@ -1107,6 +1151,19 @@ window.addEventListener('keydown', (e) => {
     switchTab('transactions');
     document.getElementById('keterangan')?.focus();
   }
+});
+
+document.querySelectorAll('.card, .section-card, .widget').forEach(card => {
+  card.addEventListener('pointermove', (e) => {
+    if (window.innerWidth < 768) return;
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    card.style.transform = `perspective(900px) rotateX(${(-y * 4).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg) translateY(-2px)`;
+  });
+  card.addEventListener('pointerleave', () => {
+    card.style.transform = '';
+  });
 });
 
 // FIRST LOAD
