@@ -106,6 +106,16 @@
     .btn-warning { background: var(--warning); color: #fff; }
     .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text); padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; gap: 8px; }
     .btn-outline:hover { background: var(--input-bg); }
+    .chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chip-btn { border:1px solid var(--card-border); background:var(--input-bg); color:var(--text); border-radius:999px; padding:8px 12px; font-size:.85rem; cursor:pointer; }
+    .chip-btn.active { background: var(--accent); color:#fff; border-color: transparent; }
+    .quick-widgets { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+    .widget { background: var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:14px 16px; }
+    .widget small { color:var(--text-muted); display:block; margin-bottom:6px; }
+    .widget strong { font-size:1rem; }
+    .btn, .nav-btn, .theme-toggle, .fab, .install-btn { position: relative; overflow: hidden; }
+    .ripple { position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.35); animation:ripple .5s linear; pointer-events:none; }
+    @keyframes ripple { to { transform:scale(4); opacity:0; } }
 
     /* History & Lists */
     .history-container { max-height: 500px; overflow-y: auto; padding-right: 8px; }
@@ -165,7 +175,7 @@
     .fa-sliders-h::before{content:'🎚️';}.fa-plus::before{content:'➕';}.fa-database::before{content:'🗄️';}.fa-download::before{content:'⬇️';}
     .fa-upload::before{content:'⬆️';}.fa-trash-alt::before{content:'🗑️';}.fa-exclamation-triangle::before{content:'⚠️';}.fa-exclamation-circle::before{content:'❗';}
     .fa-info-circle::before{content:'ℹ️';}.fa-search::before{content:'🔎';}.fa-calendar::before{content:'📅';}.fa-trash::before{content:'🗑️';}
-    .fa-save::before{content:'💾';}.fa-times::before{content:'✖';}.fa-wifi::before{content:'📡';}
+    .fa-save::before{content:'💾';}.fa-times::before{content:'✖';}.fa-wifi::before{content:'📡';}.fa-lightbulb::before{content:'💡';}.fa-fire::before{content:'🔥';}
 
     /* ================= RESPONSIVE FIXES ================= */
     @media (max-width: 1024px) {
@@ -177,7 +187,7 @@
       .main-content { margin-left: 80px; padding: 32px; }
     }
     @media (max-width: 768px) { 
-      .stats-container, .grid-2 { grid-template-columns: 1fr; gap: 20px;} 
+      .stats-container, .grid-2, .quick-widgets { grid-template-columns: 1fr; gap: 20px;} 
       .budget-card { grid-column: span 1; } 
     }
     @media (max-width: 640px) {
@@ -262,6 +272,11 @@
         </div>
       </div>
 
+      <div class="quick-widgets">
+        <div class="widget"><small><i class="fas fa-lightbulb"></i> Insight Bulan Ini</small><strong id="insightText">Belum ada data cukup.</strong></div>
+        <div class="widget"><small><i class="fas fa-fire"></i> Streak Catatan</small><strong id="streakText">0 hari berturut-turut</strong></div>
+      </div>
+
       <div class="grid-2">
         <div class="section-card"><h2 class="section-title"><i class="fas fa-chart-line"></i> Arus Kas (7 Hari)</h2><div class="chart-box"><canvas id="flowChart"></canvas></div></div>
         <div class="section-card"><h2 class="section-title"><i class="fas fa-clock"></i> Transaksi Terakhir</h2><div id="recentTransactions" class="history-container" style="max-height: 350px;"></div></div>
@@ -288,13 +303,25 @@
               </div>
               <div class="form-group"><label>Tanggal</label><input type="date" id="tanggal" required></div>
             </div>
-            <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nominal" placeholder="0" min="1" step="1" required></div>
+            <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nominal" placeholder="0" min="1" step="1" required>
+              <div class="chip-row">
+                <button type="button" class="chip-btn" onclick="setQuickNominal(50000)">50rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(100000)">100rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(200000)">200rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(500000)">500rb</button>
+              </div>
+            </div>
             <button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
             <button type="button" class="btn-outline" id="btnCancelEdit" style="display: none; margin-top:10px; width: 100%;" onclick="cancelEdit()">Batal Edit</button>
           </form>
         </div>
         <div class="section-card">
           <h2 class="section-title"><i class="fas fa-list"></i> Riwayat Transaksi</h2>
+          <div class="chip-row" style="margin-bottom:12px;">
+            <button class="chip-btn active" id="filter-all" onclick="setTransFilter('all')">Semua</button>
+            <button class="chip-btn" id="filter-in" onclick="setTransFilter('in')">Pemasukan</button>
+            <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
+          </div>
           <div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
           <div class="history-container" id="listTransaksi"></div>
         </div>
@@ -478,6 +505,7 @@ let customCatIn = sanitizeCategoryList(safeJsonParse('katIn', defaultCatIn), def
 let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), defaultCatOut);
 
 let editId = null;
+let transFilterType = "all";
 
 document.getElementById('tanggal').valueAsDate = new Date();
 
@@ -639,6 +667,34 @@ function drawDoughnutChart(canvas, labels, values) {
 function save() { localStorage.setItem('kasBukuTunai', JSON.stringify(data)); refreshCurrentView(); }
 function formatRp(num) { return 'Rp ' + num.toLocaleString('id-ID'); }
 
+function setQuickNominal(value) {
+  document.getElementById('nominal').value = value;
+  showToast(`Nominal diisi ${formatRp(value)}`, 'info');
+}
+
+function setTransFilter(type) {
+  transFilterType = type;
+  ['all', 'in', 'out'].forEach(x => document.getElementById(`filter-${x}`)?.classList.toggle('active', x === type));
+  updateTransactions();
+}
+
+function calcStreakDays(items) {
+  if (!items.length) return 0;
+  const uniq = [...new Set(items.map(i => i.tanggal))].sort((a, b) => (a > b ? -1 : 1));
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  for (let i = 0; i < uniq.length; i++) {
+    const d = parseDateLocal(uniq[i]);
+    if (!d) continue;
+    const expected = new Date(today);
+    expected.setDate(today.getDate() - i);
+    if (d.getTime() === expected.getTime()) streak++;
+    else break;
+  }
+  return streak;
+}
+
 function showToast(msg, type='success') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div'); toast.className = `toast ${type}`;
@@ -679,6 +735,9 @@ function updateDashboard() {
   });
   const mIn = monthData.filter(d => d.jenis === 'in').reduce((a,b) => a+b.nominal, 0);
   const mOut = monthData.filter(d => d.jenis === 'out').reduce((a,b) => a+b.nominal, 0);
+  const topOut = Object.entries(monthData.filter(d => d.jenis === 'out').reduce((acc, cur) => { acc[cur.kategori] = (acc[cur.kategori] || 0) + cur.nominal; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+  const insight = topOut ? `Kategori terbesar: ${topOut[0]} (${formatRp(topOut[1])})` : 'Belum ada pengeluaran bulan ini.';
+  document.getElementById('insightText').textContent = insight;
   
   document.getElementById('dashMasuk').textContent = formatRp(mIn);
   document.getElementById('dashKeluar').textContent = formatRp(mOut);
@@ -702,6 +761,7 @@ function updateDashboard() {
 
   // RECENT TRANS
   const recList = document.getElementById('recentTransactions'); recList.innerHTML = '';
+  document.getElementById('streakText').textContent = `${calcStreakDays(data)} hari berturut-turut`;
   const sorted = [...data].sort((a, b) => {
     const dA = parseDateLocal(a.tanggal);
     const dB = parseDateLocal(b.tanggal);
@@ -711,6 +771,8 @@ function updateDashboard() {
   if(sorted.length === 0) {
     recList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat transaksi</p>`;
   } else {
+    const streak = calcStreakDays(data);
+    document.getElementById('streakText').textContent = `${streak} hari berturut-turut`;
     sorted.forEach(item => {
       recList.innerHTML += `
         <div class="trans ${item.jenis}" style="padding: 14px; margin-bottom: 10px;">
@@ -759,6 +821,7 @@ function updateTransactions() {
     const dB = parseDateLocal(b.tanggal);
     return (dB?.getTime() || 0) - (dA?.getTime() || 0);
   });
+  if (transFilterType !== 'all') filtered = filtered.filter(i => i.jenis === transFilterType);
   if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search));
 
   if (filtered.length === 0) { 
@@ -1016,6 +1079,35 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('.btn, .nav-btn, .theme-toggle, .fab, .install-btn, .chip-btn');
+  if (!target) return;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const rect = target.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = `${size}px`;
+  ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+  ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+  target.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 520);
+});
+
+window.addEventListener('keydown', (e) => {
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === '/') {
+    e.preventDefault();
+    switchTab('transactions');
+    document.getElementById('searchInput')?.focus();
+  }
+  if (e.key.toLowerCase() === 'n') {
+    switchTab('transactions');
+    document.getElementById('keterangan')?.focus();
+  }
+});
 
 // FIRST LOAD
 updateFormUI();
