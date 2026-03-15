@@ -128,10 +128,15 @@
     .chip-btn { border:2px solid rgba(2,6,23,.35); background:var(--input-bg); color:var(--text); border-radius:999px; padding:8px 12px; font-size:.85rem; cursor:pointer; box-shadow: 0 3px 0 rgba(2,6,23,.25); transition:.18s; }
     .chip-btn:hover { transform: translateY(-1px) rotate(-.6deg); }
     .chip-btn.active { background: var(--accent); color:#fff; border-color: transparent; }
-    .quick-widgets { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+    .quick-widgets { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:20px; }
     .widget { background: var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:14px 16px; }
     .widget small { color:var(--text-muted); display:block; margin-bottom:6px; }
     .widget strong { font-size:1rem; }
+    .mini-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .tiny-btn { padding:8px 10px; border-radius:10px; border:2px solid rgba(15,23,42,.35); background:var(--input-bg); color:var(--text); font-size:.78rem; cursor:pointer; }
+    .undo-bar { position:fixed; left:50%; transform:translateX(-50%); bottom:90px; background:var(--card-bg); border:3px solid rgba(15,23,42,.45); border-radius:14px; padding:10px 12px; display:none; align-items:center; gap:10px; z-index:10001; box-shadow:var(--shadow); }
+    .undo-bar button { padding:6px 10px; border-radius:8px; border:2px solid rgba(15,23,42,.3); background:var(--accent); color:#fff; font-weight:700; }
+    .helper-text { font-size:.78rem; color:var(--text-muted); margin-top:6px; }
     .btn, .nav-btn, .theme-toggle, .fab, .install-btn { position: relative; overflow: hidden; }
     .ripple { position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.35); animation:ripple .5s linear; pointer-events:none; }
     @keyframes ripple { to { transform:scale(4); opacity:0; } }
@@ -312,6 +317,8 @@
       <div class="quick-widgets">
         <div class="widget"><small><i class="fas fa-lightbulb"></i> Insight Bulan Ini</small><strong id="insightText">Belum ada data cukup.</strong></div>
         <div class="widget"><small><i class="fas fa-fire"></i> Streak Catatan</small><strong id="streakText">0 hari berturut-turut</strong></div>
+        <div class="widget"><small><i class="fas fa-arrow-up"></i> Pengeluaran Hari Ini</small><strong id="todayOutText">Rp 0</strong></div>
+        <div class="widget"><small><i class="fas fa-list"></i> Total Transaksi</small><strong id="txCountText">0 data</strong></div>
       </div>
 
       <div class="grid-2">
@@ -332,11 +339,12 @@
               <input type="radio" id="typeOut" name="jenis" value="out">
               <label for="typeOut" class="out-label">Pengeluaran</label>
             </div>
-            <div class="form-group"><label>Keterangan</label><input type="text" id="keterangan" placeholder="Contoh: Gaji, Jualan, Beli Kuota" required autocomplete="off"></div>
+            <div class="form-group"><label>Keterangan</label><input type="text" id="keterangan" placeholder="Contoh: Gaji, Jualan, Beli Kuota" required autocomplete="off" maxlength="60"><div class="helper-text" id="ketCounter">0/60</div></div>
             <div class="form-row">
               <div class="form-group">
                 <label>Kategori</label>
                 <select id="kategori" required><option value="">-- pilih --</option></select>
+                <div class="chip-row" id="recentCatChips" style="margin-top:8px;"></div>
               </div>
               <div class="form-group"><label>Tanggal</label><input type="date" id="tanggal" required></div>
             </div>
@@ -359,7 +367,7 @@
             <button class="chip-btn" id="filter-in" onclick="setTransFilter('in')">Pemasukan</button>
             <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
           </div>
-          <div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
+          <div class="mini-actions"><select id="transSort" style="max-width:170px"><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="largest">Nominal Tertinggi</option></select><button class="tiny-btn" type="button" onclick="resetTransControls()">Reset Filter</button></div><div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
           <div class="history-container" id="listTransaksi"></div>
         </div>
       </div>
@@ -389,7 +397,7 @@
                 <span style="color:var(--danger)"><i class="fas fa-arrow-up"></i> <span id="rekapKeluar">Rp 0</span></span>
               </div>
             </div>
-            <button class="btn btn-in" onclick="exportToCSV()"><i class="fas fa-file-excel"></i> Download Laporan (.CSV)</button>
+            <button class="btn btn-in" onclick="exportToCSV()"><i class="fas fa-file-excel"></i> Download Laporan (.CSV)</button><button class="btn btn-outline" style="margin-top:10px" onclick="copySummary()"><i class="fas fa-check"></i> Salin Ringkasan</button>
           </div>
         </div>
       </div>
@@ -460,6 +468,7 @@
 
 <!-- TOAST & MODAL -->
 <div id="toast-container"></div>
+<div id="undoBar" class="undo-bar"><span id="undoText">Transaksi dihapus</span><button onclick="undoDelete()">Undo</button></div>
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <div style="font-size: 3rem; color: var(--danger); margin-bottom: 12px;"><i class="fas fa-exclamation-triangle"></i></div>
@@ -543,7 +552,10 @@ let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), 
 
 let editId = null;
 let transFilterType = "all";
+let transSortType = "newest";
 let prevDashboard = { saldo: 0, masuk: 0, keluar: 0 };
+let lastDeleted = null;
+let undoTimer = null;
 
 document.getElementById('tanggal').valueAsDate = new Date();
 
@@ -748,6 +760,52 @@ function setTransFilter(type) {
   updateTransactions();
 }
 
+function resetTransControls() {
+  transFilterType = 'all';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('transSort').value = 'newest';
+  transSortType = 'newest';
+  setTransFilter('all');
+}
+
+function renderRecentCategoryChips() {
+  const box = document.getElementById('recentCatChips');
+  if (!box) return;
+  const jenis = document.querySelector('input[name="jenis"]:checked').value;
+  const map = {};
+  data.filter(x => x.jenis === jenis).forEach(x => { map[x.kategori] = (map[x.kategori] || 0) + 1; });
+  const top = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,4).map(x => x[0]);
+  box.innerHTML = '';
+  top.forEach(cat => {
+    box.innerHTML += `<button type="button" class="chip-btn" onclick="pickCategory('${cat.replace(/'/g, "\'")}')">${escapeHTML(cat)}</button>`;
+  });
+}
+
+function pickCategory(cat) {
+  document.getElementById('kategori').value = cat;
+}
+
+function showUndoBar(item) {
+  const bar = document.getElementById('undoBar');
+  const text = document.getElementById('undoText');
+  text.textContent = `Dihapus: ${item.keterangan}`;
+  bar.style.display = 'flex';
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    bar.style.display = 'none';
+    lastDeleted = null;
+  }, 4500);
+}
+
+function undoDelete() {
+  if (!lastDeleted) return;
+  data.push(lastDeleted);
+  save();
+  showToast('Berhasil dibatalkan!', 'info');
+  document.getElementById('undoBar').style.display = 'none';
+  lastDeleted = null;
+}
+
 function calcStreakDays(items) {
   if (!items.length) return 0;
   const uniq = [...new Set(items.map(i => i.tanggal))].sort((a, b) => (a > b ? -1 : 1));
@@ -837,6 +895,10 @@ function updateDashboard() {
   });
   const mIn = monthData.filter(d => d.jenis === 'in').reduce((a,b) => a+b.nominal, 0);
   const mOut = monthData.filter(d => d.jenis === 'out').reduce((a,b) => a+b.nominal, 0);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayOut = data.filter(d => d.jenis === "out" && d.tanggal === todayStr).reduce((a,b)=>a+b.nominal,0);
+  document.getElementById("todayOutText").textContent = formatRp(todayOut);
+  document.getElementById("txCountText").textContent = `${data.length} data`;
   const topOut = Object.entries(monthData.filter(d => d.jenis === 'out').reduce((acc, cur) => { acc[cur.kategori] = (acc[cur.kategori] || 0) + cur.nominal; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
   const insight = topOut ? `Kategori terbesar: ${topOut[0]} (${formatRp(topOut[1])})` : 'Belum ada pengeluaran bulan ini.';
   document.getElementById('insightText').textContent = insight;
@@ -921,11 +983,10 @@ function updateTransactions() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   listEl.innerHTML = '';
   
-  let filtered = [...data].sort((a, b) => {
-    const dA = parseDateLocal(a.tanggal);
-    const dB = parseDateLocal(b.tanggal);
-    return (dB?.getTime() || 0) - (dA?.getTime() || 0);
-  });
+  let filtered = [...data];
+  if (transSortType === "newest") filtered.sort((a,b)=> (parseDateLocal(b.tanggal)?.getTime()||0)-(parseDateLocal(a.tanggal)?.getTime()||0));
+  else if (transSortType === "oldest") filtered.sort((a,b)=> (parseDateLocal(a.tanggal)?.getTime()||0)-(parseDateLocal(b.tanggal)?.getTime()||0));
+  else if (transSortType === "largest") filtered.sort((a,b)=> b.nominal-a.nominal);
   if (transFilterType !== 'all') filtered = filtered.filter(i => i.jenis === transFilterType);
   if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search));
 
@@ -959,6 +1020,7 @@ function updateFormUI() {
   const opts = jenis === 'in' ? customCatIn : customCatOut;
   opts.forEach(kat => { select.innerHTML += `<option value="${kat}">${kat}</option>`; });
   if (opts.includes(oldVal)) select.value = oldVal;
+  renderRecentCategoryChips();
 
   const btn = document.getElementById('btnSubmit');
   if (editId) { btn.className = 'btn btn-warning'; btn.innerHTML = '<i class="fas fa-save"></i> Perbarui'; } 
@@ -993,7 +1055,7 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
   save(); 
 });
 
-function hapusData(id) { showConfirm("Hapus Transaksi?", "Yakin hapus data ini?", () => { data = data.filter(d => d.id !== id); save(); showToast('Dihapus', 'danger'); }); }
+function hapusData(id) { showConfirm("Hapus Transaksi?", "Yakin hapus data ini?", () => { const item = data.find(d => d.id === id); if(!item) return; lastDeleted = { ...item }; data = data.filter(d => d.id !== id); save(); showToast('Dihapus', 'danger'); showUndoBar(item); }); }
 
 function editData(id) {
   const item = data.find(d => d.id === id); if (!item) return;
@@ -1146,6 +1208,8 @@ function confirmClearAll() {
 // INIT LISTENERS
 document.getElementById('typeIn').addEventListener('change', updateFormUI);
 document.getElementById('typeOut').addEventListener('change', updateFormUI);
+document.getElementById('transSort').addEventListener('change', (e) => { transSortType = e.target.value; updateTransactions(); });
+document.getElementById('keterangan').addEventListener('input', (e) => { document.getElementById('ketCounter').textContent = `${e.target.value.length}/60`; });
 
 let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
