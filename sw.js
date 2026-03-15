@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kas-tunai-v4';
+const CACHE_NAME = 'kas-tunai-v5';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1,9 +1,14 @@
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 220'>
-  <path d='M32 98c0-45 46-85 96-85 34 0 67 18 82 46 18 33 20 87-7 121-20 25-51 36-83 36-58 0-88-53-88-118z' fill='#22c55e' opacity='.24'/>
-  <polyline points='55,150 95,118 126,128 164,86 212,98' fill='none' stroke='#10b981' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/>
-  <circle cx='55' cy='150' r='7' fill='#10b981'/>
-  <circle cx='95' cy='118' r='7' fill='#10b981'/>
-  <circle cx='126' cy='128' r='7' fill='#10b981'/>
-  <circle cx='164' cy='86' r='7' fill='#10b981'/>
-  <circle cx='212' cy='98' r='7' fill='#10b981'/>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 240'>
+  <defs>
+    <linearGradient id='lg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#22c55e' stop-opacity='.35'/>
+      <stop offset='100%' stop-color='#10b981' stop-opacity='.15'/>
+    </linearGradient>
+  </defs>
+  <path d='M34 116c0-54 48-98 108-98 48 0 94 29 113 74 24 56 9 126-42 152-18 9-39 14-61 14-68 0-118-55-118-142z' fill='url(#lg)'/>
+  <rect x='64' y='52' width='172' height='138' rx='18' fill='rgba(255,255,255,.45)'/>
+  <line x1='84' y1='168' x2='216' y2='168' stroke='#94a3b8' stroke-width='4'/>
+  <line x1='84' y1='136' x2='216' y2='136' stroke='#cbd5e1' stroke-width='3'/>
+  <polyline points='84,154 114,128 142,138 172,110 208,120' fill='none' stroke='#10b981' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/>
+  <circle cx='84' cy='154' r='6' fill='#10b981'/><circle cx='114' cy='128' r='6' fill='#10b981'/><circle cx='142' cy='138' r='6' fill='#10b981'/><circle cx='172' cy='110' r='6' fill='#10b981'/><circle cx='208' cy='120' r='6' fill='#10b981'/>
 </svg>

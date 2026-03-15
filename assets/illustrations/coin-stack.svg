@@ -1,8 +1,16 @@
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 200'>
-  <ellipse cx='120' cy='40' rx='70' ry='22' fill='#fbbf24'/>
-  <ellipse cx='120' cy='64' rx='70' ry='22' fill='#f59e0b'/>
-  <ellipse cx='120' cy='88' rx='70' ry='22' fill='#f59e0b'/>
-  <ellipse cx='120' cy='112' rx='70' ry='22' fill='#f59e0b'/>
-  <ellipse cx='120' cy='136' rx='70' ry='22' fill='#d97706'/>
-  <text x='120' y='94' text-anchor='middle' font-size='38' fill='white'>Rp</text>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 220'>
+  <defs>
+    <linearGradient id='g1' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0%' stop-color='#facc15'/>
+      <stop offset='100%' stop-color='#f59e0b'/>
+    </linearGradient>
+  </defs>
+  <ellipse cx='140' cy='46' rx='90' ry='24' fill='url(#g1)'/>
+  <ellipse cx='140' cy='72' rx='90' ry='24' fill='#f59e0b'/>
+  <ellipse cx='140' cy='98' rx='90' ry='24' fill='#f59e0b'/>
+  <ellipse cx='140' cy='124' rx='90' ry='24' fill='#d97706'/>
+  <ellipse cx='140' cy='150' rx='90' ry='24' fill='#b45309'/>
+  <circle cx='210' cy='58' r='26' fill='rgba(255,255,255,.28)'/>
+  <text x='140' y='108' text-anchor='middle' font-size='42' font-family='Arial' font-weight='700' fill='white'>Rp</text>
+  <text x='140' y='195' text-anchor='middle' font-size='18' font-family='Arial' fill='#78350f'>Cash Flow</text>
 </svg>
