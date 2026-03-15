@@ -137,6 +137,12 @@
     .undo-bar { position:fixed; left:50%; transform:translateX(-50%); bottom:90px; background:var(--card-bg); border:3px solid rgba(15,23,42,.45); border-radius:14px; padding:10px 12px; display:none; align-items:center; gap:10px; z-index:10001; box-shadow:var(--shadow); }
     .undo-bar button { padding:6px 10px; border-radius:8px; border:2px solid rgba(15,23,42,.3); background:var(--accent); color:#fff; font-weight:700; }
     .helper-text { font-size:.78rem; color:var(--text-muted); margin-top:6px; }
+    .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:10px; }
+    .kpi { background: var(--input-bg); border:2px solid rgba(15,23,42,.35); border-radius:12px; padding:10px; }
+    .list-mini { max-height: 180px; overflow:auto; border:2px dashed var(--card-border); border-radius:12px; padding:8px; margin-top:8px; }
+    .list-mini .row { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 4px; border-bottom:1px solid var(--card-border); }
+    .tags-preview { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .tag-pill { padding:4px 8px; border-radius:999px; background:rgba(96,165,250,.18); border:1px solid rgba(96,165,250,.35); font-size:.72rem; }
     .btn, .nav-btn, .theme-toggle, .fab, .install-btn { position: relative; overflow: hidden; }
     .ripple { position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.35); animation:ripple .5s linear; pointer-events:none; }
     @keyframes ripple { to { transform:scale(4); opacity:0; } }
@@ -319,6 +325,9 @@
         <div class="widget"><small><i class="fas fa-fire"></i> Streak Catatan</small><strong id="streakText">0 hari berturut-turut</strong></div>
         <div class="widget"><small><i class="fas fa-arrow-up"></i> Pengeluaran Hari Ini</small><strong id="todayOutText">Rp 0</strong></div>
         <div class="widget"><small><i class="fas fa-list"></i> Total Transaksi</small><strong id="txCountText">0 data</strong></div>
+        <div class="widget"><small><i class="fas fa-chart-line"></i> Prediksi Saldo Akhir Bulan</small><strong id="forecastText">Rp 0</strong></div>
+        <div class="widget"><small><i class="fas fa-exclamation-circle"></i> Anomali Mingguan</small><strong id="anomalyText">Normal</strong></div>
+        <div class="widget"><small><i class="fas fa-bullseye"></i> Skor Keuangan</small><strong id="scoreText">0/100</strong></div>
       </div>
 
       <div class="grid-2">
@@ -340,6 +349,7 @@
               <label for="typeOut" class="out-label">Pengeluaran</label>
             </div>
             <div class="form-group"><label>Keterangan</label><input type="text" id="keterangan" placeholder="Contoh: Gaji, Jualan, Beli Kuota" required autocomplete="off" maxlength="60"><div class="helper-text" id="ketCounter">0/60</div></div>
+            <div class="form-group"><label>Tag (pisahkan koma)</label><input type="text" id="tagsInput" placeholder="#makan,#kantor" autocomplete="off"><div class="tags-preview" id="tagsPreview"></div></div>
             <div class="form-row">
               <div class="form-group">
                 <label>Kategori</label>
@@ -356,7 +366,7 @@
                 <button type="button" class="chip-btn" onclick="setQuickNominal(500000)">500rb</button>
               </div>
             </div>
-            <button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
+            <div class="mini-actions"><button type="button" class="tiny-btn" onclick="saveTemplate()">Simpan Template</button></div><button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
             <button type="button" class="btn-outline" id="btnCancelEdit" style="display: none; margin-top:10px; width: 100%;" onclick="cancelEdit()">Batal Edit</button>
           </form>
         </div>
@@ -368,7 +378,7 @@
             <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
           </div>
           <div class="mini-actions"><select id="transSort" style="max-width:170px"><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="largest">Nominal Tertinggi</option></select><button class="tiny-btn" type="button" onclick="resetTransControls()">Reset Filter</button></div><div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
-          <div class="history-container" id="listTransaksi"></div>
+          <div class="mini-actions"><button class="tiny-btn" type="button" onclick="toggleBulkMode()">Mode Bulk</button><button class="tiny-btn" type="button" onclick="bulkDelete()">Hapus Terpilih</button></div><div class="list-mini" id="templateList"></div><div class="history-container" id="listTransaksi"></div>
         </div>
       </div>
     </div>
@@ -418,7 +428,29 @@
             </div>
           </div>
 
-          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Manajemen Kategori</h3>
+          
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Target Tabungan & Skor</h3>
+          <div class="form-group">
+            <label>Target Tabungan (Rp)</label>
+            <div style="display:flex; gap:10px;"><input type="number" id="savingGoalInput" min="0" placeholder="Contoh: 10000000"><button class="btn btn-accent" style="width:auto; padding:0 16px;" onclick="saveSavingGoal()">Simpan</button></div>
+            <div class="helper-text" id="savingGoalInfo">Belum ada target.</div>
+          </div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Budget Per Kategori</h3>
+          <div class="mini-actions"><select id="budgetCatType"><option value="out">Pengeluaran</option><option value="in">Pemasukan</option></select><select id="budgetCatSelect"></select><input type="number" id="budgetCatAmount" min="0" placeholder="Limit"></div>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="saveCategoryBudget()">Simpan Budget Kategori</button>
+          <div class="list-mini" id="budgetCatList"></div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Transaksi Berulang</h3>
+          <div class="mini-actions"><input type="text" id="recDesc" placeholder="Keterangan"><input type="number" id="recAmount" min="1" placeholder="Nominal"><select id="recType"><option value="out">Pengeluaran</option><option value="in">Pemasukan</option></select><select id="recFreq"><option value="daily">Harian</option><option value="weekly">Mingguan</option><option value="monthly">Bulanan</option></select></div>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="addRecurringRule()">Tambah Berulang</button>
+          <div class="list-mini" id="recurringList"></div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Reminder Harian</h3>
+          <div class="mini-actions"><input type="time" id="reminderTime" value="20:00"><button class="btn btn-outline" style="width:auto" onclick="saveReminder()">Simpan Reminder</button><button class="btn btn-outline" style="width:auto" onclick="requestNotifPermission()">Izin Notif</button></div>
+          <div class="helper-text" id="reminderInfo">Belum diatur.</div>
+
+<h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Manajemen Kategori</h3>
           
           <div class="form-group">
             <label style="color:var(--success)">Kategori Pemasukan</label>
@@ -530,7 +562,8 @@ function normalizeTransaction(item) {
     keterangan,
     kategori,
     nominal,
-    tanggal: item.tanggal
+    tanggal: item.tanggal,
+    tags: Array.isArray(item.tags) ? item.tags.map(x => String(x).trim()).filter(Boolean).slice(0, 8) : []
   };
 }
 
@@ -556,6 +589,14 @@ let transSortType = "newest";
 let prevDashboard = { saldo: 0, masuk: 0, keluar: 0 };
 let lastDeleted = null;
 let undoTimer = null;
+let bulkMode = false;
+let selectedIds = new Set();
+let templates = (safeJsonParse('txTemplates', []) || []).filter(t => t && typeof t === 'object');
+let recurringRules = (safeJsonParse('recurringRules', []) || []).filter(r => r && typeof r === 'object');
+let categoryBudgets = safeJsonParse('categoryBudgets', {}) || {};
+if (!categoryBudgets || typeof categoryBudgets !== 'object' || Array.isArray(categoryBudgets)) categoryBudgets = {};
+let savingGoal = Math.max(0, parseInt(localStorage.getItem('savingGoal'), 10) || 0);
+let reminderTime = localStorage.getItem('reminderTime') || "";
 
 document.getElementById('tanggal').valueAsDate = new Date();
 
@@ -806,6 +847,224 @@ function undoDelete() {
   lastDeleted = null;
 }
 
+function parseTagsInput(raw) {
+  if (!raw) return [];
+  return [...new Set(raw.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean).slice(0, 8))];
+}
+
+function renderTagsPreview() {
+  const preview = document.getElementById('tagsPreview');
+  if (!preview) return;
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
+  preview.innerHTML = tags.map(t => `<span class="tag-pill">#${escapeHTML(t)}</span>`).join('');
+}
+
+function renderTemplateList() {
+  const box = document.getElementById('templateList');
+  if (!box) return;
+  if (!templates.length) {
+    box.innerHTML = '<div class="helper-text">Belum ada template transaksi.</div>';
+    return;
+  }
+  box.innerHTML = templates.map((t, idx) => `<div class="row"><span>${escapeHTML(t.keterangan)} (${formatRp(t.nominal)})</span><span><button class="tiny-btn" onclick="applyTemplate(${idx})">Pakai</button> <button class="tiny-btn" onclick="deleteTemplate(${idx})">Hapus</button></span></div>`).join('');
+}
+
+function saveTemplate() {
+  const jenis = document.querySelector('input[name="jenis"]:checked').value;
+  const keterangan = document.getElementById('keterangan').value.trim();
+  const kategori = document.getElementById('kategori').value;
+  const nominal = normalizeNominal(document.getElementById('nominal').value);
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
+  if (!keterangan || !kategori || !nominal) return showToast('Isi form dulu untuk template', 'danger');
+  templates.push({ jenis, keterangan, kategori, nominal, tags });
+  templates = templates.slice(-15);
+  localStorage.setItem('txTemplates', JSON.stringify(templates));
+  renderTemplateList();
+  showToast('Template disimpan', 'success');
+}
+
+function applyTemplate(index) {
+  const t = templates[index];
+  if (!t) return;
+  document.getElementById(t.jenis === 'in' ? 'typeIn' : 'typeOut').checked = true;
+  updateFormUI();
+  document.getElementById('keterangan').value = t.keterangan;
+  document.getElementById('kategori').value = t.kategori;
+  document.getElementById('nominal').value = t.nominal;
+  document.getElementById('tagsInput').value = (t.tags || []).join(', ');
+  renderTagsPreview();
+  showToast('Template dipakai', 'info');
+}
+
+function deleteTemplate(index) {
+  templates.splice(index, 1);
+  localStorage.setItem('txTemplates', JSON.stringify(templates));
+  renderTemplateList();
+}
+
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  selectedIds.clear();
+  showToast(bulkMode ? 'Mode bulk aktif' : 'Mode bulk nonaktif', 'info');
+  updateTransactions();
+}
+
+function toggleSelectTx(id, checked) {
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+}
+
+function bulkDelete() {
+  if (!selectedIds.size) return showToast('Belum ada yang dipilih', 'danger');
+  showConfirm('Hapus banyak transaksi?', `${selectedIds.size} data akan dihapus`, () => {
+    data = data.filter(d => !selectedIds.has(d.id));
+    selectedIds.clear();
+    save();
+    showToast('Bulk delete berhasil', 'danger');
+  });
+}
+
+function updateBudgetCategorySelect() {
+  const type = document.getElementById('budgetCatType')?.value || 'out';
+  const sel = document.getElementById('budgetCatSelect');
+  if (!sel) return;
+  const source = type === 'in' ? customCatIn : customCatOut;
+  sel.innerHTML = source.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+}
+
+function renderCategoryBudgetList() {
+  const box = document.getElementById('budgetCatList');
+  if (!box) return;
+  const keys = Object.keys(categoryBudgets);
+  if (!keys.length) return box.innerHTML = '<div class="helper-text">Belum ada budget kategori.</div>';
+  box.innerHTML = keys.map(k => `<div class="row"><span>${escapeHTML(k)}: ${formatRp(categoryBudgets[k])}</span><button class="tiny-btn" onclick="removeCategoryBudget(decodeURIComponent('${encodeURIComponent(k)}'))">Hapus</button></div>`).join('');
+}
+
+function saveCategoryBudget() {
+  const type = document.getElementById('budgetCatType').value;
+  const cat = document.getElementById('budgetCatSelect').value;
+  const amount = Math.max(0, parseInt(document.getElementById('budgetCatAmount').value, 10) || 0);
+  if (!cat || !amount) return showToast('Isi kategori dan limit', 'danger');
+  categoryBudgets[`${type}:${cat}`] = amount;
+  localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+  renderCategoryBudgetList();
+  showToast('Budget kategori disimpan', 'success');
+}
+
+function removeCategoryBudget(key) {
+  delete categoryBudgets[key];
+  localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+  renderCategoryBudgetList();
+}
+
+function addRecurringRule() {
+  const keterangan = document.getElementById('recDesc').value.trim();
+  const nominal = normalizeNominal(document.getElementById('recAmount').value);
+  const jenis = document.getElementById('recType').value;
+  const freq = document.getElementById('recFreq').value;
+  const kategori = (jenis === 'in' ? customCatIn[0] : customCatOut[0]) || 'Lain-lain';
+  if (!keterangan || !nominal) return showToast('Isi data berulang dulu', 'danger');
+  recurringRules.push({ id: Date.now(), keterangan, nominal, jenis, freq, kategori, lastRun: '' });
+  localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+  renderRecurringList();
+  showToast('Aturan berulang ditambahkan', 'success');
+}
+
+function renderRecurringList() {
+  const box = document.getElementById('recurringList');
+  if (!box) return;
+  if (!recurringRules.length) return box.innerHTML = '<div class="helper-text">Belum ada transaksi berulang.</div>';
+  box.innerHTML = recurringRules.map((r, i) => `<div class="row"><span>${escapeHTML(r.keterangan)} (${r.freq})</span><button class="tiny-btn" onclick="deleteRecurring(${i})">Hapus</button></div>`).join('');
+}
+
+function deleteRecurring(i) {
+  recurringRules.splice(i,1);
+  localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+  renderRecurringList();
+}
+
+function runRecurringAuto() {
+  const today = new Date();
+  const tStr = today.toISOString().split('T')[0];
+  let added = 0;
+  recurringRules.forEach(rule => {
+    const last = rule.lastRun ? parseDateLocal(rule.lastRun) : null;
+    let should = false;
+    if (!last) should = true;
+    else if (rule.freq === 'daily') should = (today - last) / 86400000 >= 1;
+    else if (rule.freq === 'weekly') should = (today - last) / 86400000 >= 7;
+    else if (rule.freq === 'monthly') should = today.getMonth() !== last.getMonth() || today.getFullYear() !== last.getFullYear();
+    if (should) {
+      data.push({ id: Date.now() + Math.floor(Math.random()*999), jenis: rule.jenis, keterangan: `${rule.keterangan} (Auto)`, kategori: rule.kategori, nominal: rule.nominal, tanggal: tStr, tags: ['auto'] });
+      rule.lastRun = tStr;
+      added++;
+    }
+  });
+  if (added) {
+    localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+    save();
+    showToast(`${added} transaksi berulang ditambahkan`, 'info');
+  }
+}
+
+function saveSavingGoal() {
+  savingGoal = Math.max(0, parseInt(document.getElementById('savingGoalInput').value, 10) || 0);
+  localStorage.setItem('savingGoal', savingGoal);
+  updateGoalInfo();
+  showToast('Target tabungan disimpan', 'success');
+}
+
+function updateGoalInfo() {
+  const info = document.getElementById('savingGoalInfo');
+  if (!info) return;
+  const saldo = data.filter(d=>d.jenis==='in').reduce((a,b)=>a+b.nominal,0)-data.filter(d=>d.jenis==='out').reduce((a,b)=>a+b.nominal,0);
+  if (!savingGoal) return info.textContent = 'Belum ada target.';
+  const pct = Math.min(100, Math.round((saldo / savingGoal) * 100));
+  info.textContent = `Progress: ${formatRp(Math.max(0,saldo))} / ${formatRp(savingGoal)} (${pct}%)`;
+}
+
+function saveReminder() {
+  reminderTime = document.getElementById('reminderTime').value;
+  localStorage.setItem('reminderTime', reminderTime);
+  document.getElementById('reminderInfo').textContent = reminderTime ? `Reminder aktif jam ${reminderTime}` : 'Belum diatur.';
+  showToast('Reminder disimpan', 'success');
+}
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) return showToast('Browser tidak mendukung notif', 'danger');
+  Notification.requestPermission().then(p => showToast(`Status notif: ${p}`, 'info'));
+}
+
+function checkReminderTick() {
+  if (!reminderTime) return;
+  const now = new Date();
+  const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if (hm === reminderTime && Notification.permission === 'granted') {
+    new Notification('KasTunai Reminder', { body: 'Jangan lupa catat transaksi hari ini ✍️' });
+  }
+}
+
+function computeForecastAndScore() {
+  const now = new Date();
+  const monthData = data.filter(d => { const dt = parseDateLocal(d.tanggal); return dt && dt.getMonth()===now.getMonth() && dt.getFullYear()===now.getFullYear(); });
+  const daysPassed = Math.max(1, now.getDate());
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const net = monthData.reduce((a,b)=>a+(b.jenis==='in'?b.nominal:-b.nominal),0);
+  const forecast = Math.round((net/daysPassed)*daysInMonth);
+  document.getElementById('forecastText').textContent = formatRp(forecast);
+
+  const last7 = data.filter(d=>{const dt=parseDateLocal(d.tanggal); if(!dt) return false; return (now-dt)/86400000<=7 && d.jenis==='out';}).reduce((a,b)=>a+b.nominal,0);
+  const prev7 = data.filter(d=>{const dt=parseDateLocal(d.tanggal); if(!dt) return false; const dd=(now-dt)/86400000; return dd>7 && dd<=14 && d.jenis==='out';}).reduce((a,b)=>a+b.nominal,0);
+  document.getElementById('anomalyText').textContent = prev7>0 && last7>prev7*1.5 ? '⚠️ Boros minggu ini' : 'Normal';
+
+  const inTotal = monthData.filter(d=>d.jenis==='in').reduce((a,b)=>a+b.nominal,0);
+  const outTotal = monthData.filter(d=>d.jenis==='out').reduce((a,b)=>a+b.nominal,0);
+  let score = 50;
+  if (inTotal>0) score += Math.max(-20, Math.min(30, Math.round(((inTotal-outTotal)/inTotal)*100/2)));
+  score += Math.min(20, calcStreakDays(data));
+  score = Math.max(0, Math.min(100, score));
+  document.getElementById('scoreText').textContent = `${score}/100`;
+}
+
 function calcStreakDays(items) {
   if (!items.length) return 0;
   const uniq = [...new Set(items.map(i => i.tanggal))].sort((a, b) => (a > b ? -1 : 1));
@@ -900,6 +1159,7 @@ function updateDashboard() {
   document.getElementById("todayOutText").textContent = formatRp(todayOut);
   document.getElementById("txCountText").textContent = `${data.length} data`;
   const topOut = Object.entries(monthData.filter(d => d.jenis === 'out').reduce((acc, cur) => { acc[cur.kategori] = (acc[cur.kategori] || 0) + cur.nominal; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+  computeForecastAndScore();
   const insight = topOut ? `Kategori terbesar: ${topOut[0]} (${formatRp(topOut[1])})` : 'Belum ada pengeluaran bulan ini.';
   document.getElementById('insightText').textContent = insight;
   
@@ -988,17 +1248,18 @@ function updateTransactions() {
   else if (transSortType === "oldest") filtered.sort((a,b)=> (parseDateLocal(a.tanggal)?.getTime()||0)-(parseDateLocal(b.tanggal)?.getTime()||0));
   else if (transSortType === "largest") filtered.sort((a,b)=> b.nominal-a.nominal);
   if (transFilterType !== 'all') filtered = filtered.filter(i => i.jenis === transFilterType);
-  if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search));
+  if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search) || (i.tags || []).some(t => t.toLowerCase().includes(search)));
 
   if (filtered.length === 0) { 
     listEl.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--text-muted);"><i class="fas fa-search" style="font-size:3rem; opacity:0.3; margin-bottom:10px; display:block;"></i><p>Tidak ditemukan.</p></div>`; return; 
   }
   
   filtered.forEach(item => {
+    const tagsHtml = (item.tags || []).map(t => `<span class="tag-pill">#${escapeHTML(t)}</span>`).join('');
     listEl.innerHTML += `
       <div class="trans ${item.jenis}">
         <div class="trans-header">
-          <div class="trans-desc">${escapeHTML(item.keterangan)}</div>
+          <div class="trans-desc">${bulkMode ? `<input type="checkbox" onchange="toggleSelectTx(${item.id}, this.checked)">` : ''} ${escapeHTML(item.keterangan)}</div>
           <div class="trans-amount ${item.jenis}">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
         </div>
         <div class="trans-footer">
@@ -1008,6 +1269,7 @@ function updateTransactions() {
             <button class="btn-del-icon" onclick="hapusData(${item.id})"><i class="fas fa-trash"></i></button>
           </div>
         </div>
+        ${tagsHtml ? `<div class="tags-preview">${tagsHtml}</div>` : ''}
       </div>`;
   });
 }
@@ -1034,6 +1296,7 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
   const kategori = document.getElementById('kategori').value;
   const nominal = normalizeNominal(document.getElementById('nominal').value);
   const tanggal = document.getElementById('tanggal').value;
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
 
   if (!keterangan || !kategori || !tanggal || !nominal) {
     showToast('Lengkapi form dengan benar!', 'danger');
@@ -1042,15 +1305,15 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
 
   if (editId) {
     const idx = data.findIndex(d => d.id === editId);
-    if (idx !== -1) data[idx] = { id: editId, jenis, keterangan, kategori, nominal, tanggal };
+    if (idx !== -1) data[idx] = { id: editId, jenis, keterangan, kategori, nominal, tanggal, tags };
     showToast('Transaksi diperbarui!', 'info'); cancelEdit();
   } else {
-    data.push({ id: Date.now(), jenis, keterangan, kategori, nominal, tanggal });
+    data.push({ id: Date.now(), jenis, keterangan, kategori, nominal, tanggal, tags });
     showToast('Tersimpan!', 'success');
     const btnRect = document.getElementById('btnSubmit').getBoundingClientRect();
     spawnSparkBurst(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
     if (navigator.vibrate) navigator.vibrate(25);
-    document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = '';
+    document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tagsInput').value=''; renderTagsPreview();
   }
   save(); 
 });
@@ -1061,7 +1324,7 @@ function editData(id) {
   const item = data.find(d => d.id === id); if (!item) return;
   editId = id; document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Transaksi';
   document.getElementById(item.jenis === 'in' ? 'typeIn' : 'typeOut').checked = true;
-  document.getElementById('keterangan').value = item.keterangan; document.getElementById('tanggal').value = item.tanggal; document.getElementById('nominal').value = item.nominal;
+  document.getElementById('keterangan').value = item.keterangan; document.getElementById('tanggal').value = item.tanggal; document.getElementById('nominal').value = item.nominal; document.getElementById('tagsInput').value = (item.tags || []).join(', '); renderTagsPreview();
   updateFormUI(); document.getElementById('kategori').value = item.kategori;
   document.getElementById('btnCancelEdit').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1069,7 +1332,7 @@ function editData(id) {
 function cancelEdit() {
   editId = null; document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Catat Transaksi';
   document.getElementById('btnCancelEdit').style.display = 'none';
-  document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tanggal').valueAsDate = new Date();
+  document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tagsInput').value=''; renderTagsPreview(); document.getElementById('tanggal').valueAsDate = new Date();
   updateFormUI();
 }
 
@@ -1113,9 +1376,15 @@ function updateReports() {
 
 function exportToCSV() {
   if(data.length === 0) { showToast("Tidak ada data", "danger"); return; }
-  let csv = "Tanggal,Jenis,Keterangan,Kategori,Nominal(Rp)\n";
-  data.forEach(r => { csv += `${r.tanggal},${r.jenis==='in'?'Pemasukan':'Pengeluaran'},"${r.keterangan}",${r.kategori},${r.nominal}\n`; });
+  let csv = "Tanggal,Jenis,Keterangan,Kategori,Nominal(Rp),Tags\n";
+  data.forEach(r => { csv += `${r.tanggal},${r.jenis==='in'?'Pemasukan':'Pengeluaran'},"${r.keterangan}",${r.kategori},${r.nominal},"${(r.tags||[]).join('|')}"\n`; });
   const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))); link.setAttribute("download", `Laporan_KasTunai_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); link.remove(); showToast("CSV Diunduh!", "success");
+}
+
+function copySummary() {
+  const teks = `Ringkasan ${document.getElementById('judulPeriode').textContent}: Masuk ${document.getElementById('rekapMasuk').textContent}, Keluar ${document.getElementById('rekapKeluar').textContent}, Selisih ${document.getElementById('rekapSelisih').textContent}`;
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(teks).then(() => showToast('Ringkasan disalin!', 'success')).catch(() => showToast('Gagal menyalin', 'danger'));
+  else showToast('Clipboard tidak didukung', 'danger');
 }
 
 // ────────────────────────────────────────────────
@@ -1123,6 +1392,13 @@ function exportToCSV() {
 // ────────────────────────────────────────────────
 function updateSettingsUI() {
   document.getElementById('budgetInput').value = budgetLimit > 0 ? budgetLimit : '';
+  document.getElementById('savingGoalInput').value = savingGoal || '';
+  document.getElementById('reminderTime').value = reminderTime || '20:00';
+  document.getElementById('reminderInfo').textContent = reminderTime ? `Reminder aktif jam ${reminderTime}` : 'Belum diatur.';
+  updateGoalInfo();
+  updateBudgetCategorySelect();
+  renderCategoryBudgetList();
+  renderRecurringList();
   renderCategories();
 }
 
@@ -1164,7 +1440,7 @@ function delCategory(jenis, index) {
 }
 
 function backupData() {
-  const backupObj = { data: data, customCatIn: customCatIn, customCatOut: customCatOut, budgetLimit: budgetLimit };
+  const backupObj = { data: data, customCatIn: customCatIn, customCatOut: customCatOut, budgetLimit: budgetLimit, templates, recurringRules, categoryBudgets, savingGoal, reminderTime };
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
   const link = document.createElement("a"); link.setAttribute("href", dataStr); link.setAttribute("download", `Backup_KasTunai_${new Date().toISOString().split('T')[0]}.json`);
   document.body.appendChild(link); link.click(); link.remove(); showToast('Backup Diunduh!');
@@ -1181,12 +1457,22 @@ function restoreData(event) {
       const restoredCatIn = sanitizeCategoryList(parsed.customCatIn || customCatIn, defaultCatIn);
       const restoredCatOut = sanitizeCategoryList(parsed.customCatOut || customCatOut, defaultCatOut);
       const restoredBudget = Math.max(0, parseInt(parsed.budgetLimit, 10) || 0);
+      const restoredTemplates = Array.isArray(parsed.templates) ? parsed.templates : templates;
+      const restoredRecurring = Array.isArray(parsed.recurringRules) ? parsed.recurringRules : recurringRules;
+      const restoredCatBudget = parsed.categoryBudgets && typeof parsed.categoryBudgets === 'object' ? parsed.categoryBudgets : categoryBudgets;
+      const restoredGoal = Math.max(0, parseInt(parsed.savingGoal, 10) || 0);
+      const restoredReminder = typeof parsed.reminderTime === 'string' ? parsed.reminderTime : reminderTime;
       showConfirm("Peringatan Restore!", "Data Anda akan ditimpa dengan file ini. Lanjut?", () => {
         data = restoredData;
         customCatIn = restoredCatIn;
         customCatOut = restoredCatOut;
         budgetLimit = restoredBudget;
-        localStorage.setItem('kasBukuTunai', JSON.stringify(data)); localStorage.setItem('katIn', JSON.stringify(customCatIn)); localStorage.setItem('katOut', JSON.stringify(customCatOut)); localStorage.setItem('kasBudget', budgetLimit);
+        templates = restoredTemplates;
+        recurringRules = restoredRecurring;
+        categoryBudgets = restoredCatBudget;
+        savingGoal = restoredGoal;
+        reminderTime = restoredReminder;
+        localStorage.setItem('kasBukuTunai', JSON.stringify(data)); localStorage.setItem('katIn', JSON.stringify(customCatIn)); localStorage.setItem('katOut', JSON.stringify(customCatOut)); localStorage.setItem('kasBudget', budgetLimit); localStorage.setItem('txTemplates', JSON.stringify(templates)); localStorage.setItem('recurringRules', JSON.stringify(recurringRules)); localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets)); localStorage.setItem('savingGoal', savingGoal); localStorage.setItem('reminderTime', reminderTime);
         showToast('Restore Berhasil!', 'success'); setTimeout(() => location.reload(), 1500);
       });
     } catch(err) { showToast('File tidak valid!', 'danger'); }
@@ -1200,6 +1486,11 @@ function confirmClearAll() {
     localStorage.removeItem('katIn');
     localStorage.removeItem('katOut');
     localStorage.removeItem('kasBudget');
+    localStorage.removeItem('txTemplates');
+    localStorage.removeItem('recurringRules');
+    localStorage.removeItem('categoryBudgets');
+    localStorage.removeItem('savingGoal');
+    localStorage.removeItem('reminderTime');
     showToast('Data dihapus...', 'danger');
     setTimeout(() => location.reload(), 1000);
   });
@@ -1210,6 +1501,8 @@ document.getElementById('typeIn').addEventListener('change', updateFormUI);
 document.getElementById('typeOut').addEventListener('change', updateFormUI);
 document.getElementById('transSort').addEventListener('change', (e) => { transSortType = e.target.value; updateTransactions(); });
 document.getElementById('keterangan').addEventListener('input', (e) => { document.getElementById('ketCounter').textContent = `${e.target.value.length}/60`; });
+document.getElementById('tagsInput').addEventListener('input', renderTagsPreview);
+document.getElementById('budgetCatType').addEventListener('change', updateBudgetCategorySelect);
 
 let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
@@ -1313,6 +1606,12 @@ updateFormUI();
 updateDashboard();
 updateOnlineStatus();
 applySectionAnimation();
+renderTemplateList();
+updateBudgetCategorySelect();
+renderCategoryBudgetList();
+renderRecurringList();
+runRecurringAuto();
+setInterval(checkReminderTick, 60000);
 
 </script>
 </body>
