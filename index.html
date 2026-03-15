@@ -58,6 +58,11 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
     .greeting h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
     .greeting p { color: var(--text-muted); font-size: 1rem; }
+    .hero-visual { margin-bottom: 18px; border: 3px solid rgba(15,23,42,.45); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); }
+    .hero-visual img { width: 100%; display: block; height: auto; }
+    .image-badges { display:flex; gap:12px; margin: 4px 0 16px; flex-wrap: wrap; }
+    .img-badge { background: var(--card-bg); border: 3px solid rgba(15,23,42,.4); border-radius: 16px; padding: 10px 12px; display:flex; align-items:center; gap: 10px; }
+    .img-badge img { width: 52px; height: 52px; object-fit: contain; }
     .theme-toggle { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--text); cursor: pointer; transition: 0.3s; box-shadow: var(--shadow); }
     .theme-toggle:hover { transform: scale(1.1) rotate(8deg); }
 
@@ -228,6 +233,8 @@
       
       .card, .section-card { padding: 20px; border-radius: 16px;}
       .card .amount { font-size: 1.8rem; }
+      .image-badges { gap: 8px; }
+      .img-badge { width: 100%; }
     }
   </style>
 </head>
@@ -270,6 +277,13 @@
 
     <!-- ================= VIEW 1: DASHBOARD ================= -->
     <div id="view-dashboard" class="view-section active">
+      <div class="hero-visual">
+        <img src="assets/illustrations/finance-hero.svg" alt="Ilustrasi ringkasan keuangan">
+      </div>
+      <div class="image-badges">
+        <div class="img-badge"><img src="assets/illustrations/coin-stack.svg" alt="Ilustrasi koin"><div><strong>Kas Terkelola</strong><div style="font-size:.85rem;color:var(--text-muted)">Pantau saldo lebih visual</div></div></div>
+        <div class="img-badge"><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi grafik"><div><strong>Grafik Interaktif</strong><div style="font-size:.85rem;color:var(--text-muted)">Analitik lebih mudah dipahami</div></div></div>
+      </div>
       <div class="stats-container">
         
         <!-- Budget Progress Bar -->
@@ -363,7 +377,7 @@
           </select>
         </div>
         <div class="grid-2">
-          <div><h3 style="margin-bottom: 16px;">Distribusi Pengeluaran</h3><div class="chart-box"><canvas id="expenseChart"></canvas></div></div>
+          <div><h3 style="margin-bottom: 10px;">Distribusi Pengeluaran</h3><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi distribusi" style="width:92px;display:block;margin-bottom:10px;"><div class="chart-box"><canvas id="expenseChart"></canvas></div></div>
           <div>
             <div style="background: var(--input-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--card-border); text-align: center; margin-bottom: 20px;">
               <p style="color:var(--text-muted); margin-bottom:10px; font-weight: 500;">Selisih Keuangan (<span id="judulPeriode">Bulan Ini</span>)</p>

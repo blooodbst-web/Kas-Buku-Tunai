@@ -1,11 +1,14 @@
-const CACHE_NAME = 'kas-tunai-v3';
+const CACHE_NAME = 'kas-tunai-v4';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './sw.js',
   './assets/icons/icon-192.svg',
-  './assets/icons/icon-512.svg'
+  './assets/icons/icon-512.svg',
+  './assets/illustrations/finance-hero.svg',
+  './assets/illustrations/coin-stack.svg',
+  './assets/illustrations/chart-blob.svg',
 ];
 
 self.addEventListener('install', event => {
