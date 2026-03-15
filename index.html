@@ -65,6 +65,9 @@
     .image-badges { display:flex; gap:12px; margin: 4px 0 16px; flex-wrap: wrap; }
     .img-badge { background: var(--card-bg); border: 3px solid rgba(15,23,42,.4); border-radius: 16px; padding: 10px 12px; display:flex; align-items:center; gap: 10px; box-shadow: 0 6px 0 rgba(2,6,23,.24); }
     .img-badge img { width: 52px; height: 52px; object-fit: contain; }
+    .anime-panel { margin: 10px 0 16px; background: linear-gradient(135deg, rgba(59,130,246,.22), rgba(139,92,246,.22)); border: 3px solid rgba(15,23,42,.5); border-radius: 20px; padding: 12px; display:flex; gap:12px; align-items:center; box-shadow: var(--shadow); }
+    .anime-panel img { width: 92px; height: 92px; object-fit: contain; border-radius: 14px; background: rgba(255,255,255,.2); border:2px solid rgba(255,255,255,.35); }
+    .anime-panel .bubble { background: rgba(2,6,23,.3); border:2px dashed rgba(255,255,255,.45); border-radius: 14px; padding: 10px 12px; font-weight: 700; line-height: 1.45; }
     .theme-toggle { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--text); cursor: pointer; transition: 0.3s; box-shadow: var(--shadow); }
     .theme-toggle:hover { transform: scale(1.1) rotate(8deg); }
 
@@ -249,6 +252,9 @@
       .card .amount { font-size: 1.8rem; }
       .image-badges { gap: 8px; }
       .img-badge { width: 100%; }
+      .anime-panel { padding: 10px; }
+      .anime-panel img { width: 78px; height: 78px; }
+      .anime-panel .bubble { font-size: .86rem; }
       .chart-box { height: 250px; }
       .chart-box.compact { height: 220px; }
     }
@@ -298,6 +304,12 @@
       <div class="hero-visual">
         <img src="assets/illustrations/finance-hero.svg" alt="Ilustrasi ringkasan keuangan">
       </div>
+      <div class="anime-panel">
+        <img src="assets/illustrations/anime-boy.svg" alt="Ilustrasi anime cowok">
+        <div class="bubble">
+          ⚡ Mode Anime Aktif! Catat transaksi harianmu biar progres keuangan makin konsisten.
+        </div>
+      </div>
       <div class="image-badges">
         <div class="img-badge"><img src="assets/illustrations/coin-stack.svg" alt="Ilustrasi koin"><div><strong>Kas Terkelola</strong><div style="font-size:.85rem;color:var(--text-muted)">Pantau saldo lebih visual</div></div></div>
         <div class="img-badge"><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi grafik"><div><strong>Grafik Interaktif</strong><div style="font-size:.85rem;color:var(--text-muted)">Analitik lebih mudah dipahami</div></div></div>
@@ -340,8 +352,7 @@
 
     <!-- ================= VIEW 2: TRANSAKSI ================= -->
     <div id="view-transactions" class="view-section">
-      <div class="grid-2">
-        <div class="section-card" style="position: sticky; top: 20px;">
+      <div class="section-card" style="max-width: 760px; margin: 0 auto 24px;">
           <h2 class="section-title" id="formTitle"><i class="fas fa-edit"></i> Catat Transaksi</h2>
           <form id="formKas">
             <div class="type-toggle">
@@ -368,23 +379,12 @@
                 <button type="button" class="chip-btn" onclick="setQuickNominal(500000)">500rb</button>
               </div>
             </div>
-            <div class="mini-actions"><button type="button" class="tiny-btn" onclick="saveTemplate()">Simpan Template</button></div><button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
+            <button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
             <button type="button" class="btn-outline" id="btnCancelEdit" style="display: none; margin-top:10px; width: 100%;" onclick="cancelEdit()">Batal Edit</button>
           </form>
         </div>
-        <div class="section-card">
-          <h2 class="section-title"><i class="fas fa-lightbulb"></i> Cepat & Interaktif</h2>
-          <p style="color:var(--text-muted);margin-bottom:10px;line-height:1.6">Riwayat transaksi sekarang dipisah ke tab <strong>Riwayat</strong> supaya halaman Catat lebih fokus dan ringan.</p>
-          <div class="kpi-grid">
-            <div class="kpi"><strong>💡 Tip #1</strong><div class="helper-text">Gunakan template untuk transaksi rutin agar input lebih cepat.</div></div>
-            <div class="kpi"><strong>🏷️ Tip #2</strong><div class="helper-text">Tambahkan tag seperti #makan, #transport supaya pencarian di tab Riwayat lebih mudah.</div></div>
-            <div class="kpi"><strong>🔁 Tip #3</strong><div class="helper-text">Aktifkan transaksi berulang dari Pengaturan untuk catatan otomatis.</div></div>
-          </div>
-          <button class="btn btn-outline" style="margin-top:16px" onclick="switchTab('history')"><i class="fas fa-clock"></i> Buka Tab Riwayat</button>
-          <div class="list-mini" id="templateList"></div>
-        </div>
-      </div>
     </div>
+
 
     <!-- ================= VIEW 3: RIWAYAT ================= -->
     <div id="view-history" class="view-section">
