@@ -42,6 +42,8 @@
     .nav-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 16px; transition: 0.3s; }
     .nav-btn:hover { background: rgba(96, 165, 250, 0.1); color: var(--accent); }
     .nav-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3); }
+    .nav-btn.active::after { content:''; position:absolute; inset:0; background: linear-gradient(120deg, transparent, rgba(255,255,255,.25), transparent); transform: translateX(-120%); animation: navShine 1.4s ease; }
+    @keyframes navShine { to { transform: translateX(120%); } }
 
     /* Bottom Nav (Mobile) - DIPERBAIKI */
     .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--card-border); z-index: 100; padding: 8px 12px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
@@ -61,7 +63,9 @@
 
     .view-section { display: none; animation: fadeIn 0.4s ease forwards; }
     .view-section.active { display: block; }
+    .section-card.reveal { animation: cardReveal .45s ease both; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes cardReveal { from { opacity: 0; transform: translateY(12px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
 
     /* ================= COMPONENTS (CARDS) ================= */
     .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
@@ -75,7 +79,8 @@
     .card.balance { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: none; }
     .card.balance h3 { color: rgba(255,255,255,0.9); }
     .card.in .amount { color: var(--success); } .card.out .amount { color: var(--danger); }
-    .card-icon { position: absolute; right: -15px; bottom: -20px; font-size: 7rem; opacity: 0.1; }
+    .card-icon { position: absolute; right: -15px; bottom: -20px; font-size: 7rem; opacity: 0.1; animation: iconFloat 4.2s ease-in-out infinite; }
+    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
     /* Progress Bar Anggaran */
     .budget-card { grid-column: span 3; padding: 20px 24px; }
@@ -148,7 +153,9 @@
     
     /* Toast & Modal */
     #toast-container { position: fixed; top: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
-    .toast { padding: 14px 24px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: var(--shadow); animation: slideIn 0.3s ease, fadeOut 0.3s ease 3s forwards; display: flex; align-items: center; gap: 10px; }
+    .toast { padding: 14px 24px 18px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: var(--shadow); animation: slideIn 0.3s ease, fadeOut 0.3s ease 3s forwards; display: flex; align-items: center; gap: 10px; position: relative; overflow: hidden; }
+    .toast .bar { position:absolute; left:0; bottom:0; height:3px; width:100%; background: rgba(255,255,255,.5); transform-origin:left; animation: toastBar 3s linear forwards; }
+    @keyframes toastBar { to { transform: scaleX(0); } }
     .toast.success { background: var(--success); } .toast.danger { background: var(--danger); } .toast.info { background: var(--accent); }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
@@ -159,7 +166,8 @@
     .modal-overlay.active .modal { transform: scale(1); }
 
     /* FAB Mobile - DIPERBAIKI */
-    .fab { display: none; position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s;}
+    .fab { display: none; position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s; animation: fabPulse 2.2s infinite;}
+    @keyframes fabPulse { 0%,100% { box-shadow: 0 8px 20px rgba(96,165,250,.4);} 50% { box-shadow: 0 10px 26px rgba(96,165,250,.7);} }
     .fab:active { transform: scale(0.9); }
 
     /* Category Tag List */
@@ -522,7 +530,7 @@ let greeting = "Selamat Pagi!";
 if (hour >= 11 && hour < 15) greeting = "Selamat Siang!";
 else if (hour >= 15 && hour < 18) greeting = "Selamat Sore!";
 else if (hour >= 18) greeting = "Selamat Malam!";
-document.getElementById('greetingText').innerText = greeting;
+typeGreeting(greeting);
 
 // ────────────────────────────────────────────────
 // NAVIGATION & THEME
@@ -540,6 +548,7 @@ function switchTab(tabId) {
   else if (window.innerWidth <= 640) fab.style.display = 'flex';
 
   refreshCurrentView();
+  applySectionAnimation();
 }
 
 const themeToggle = document.getElementById('themeToggle');
@@ -553,10 +562,31 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem('theme', currentTheme);
   updateThemeIcon();
   refreshCurrentView();
+  applySectionAnimation();
 });
 
 function updateThemeIcon() { themeToggle.innerHTML = currentTheme === 'dark' ? '<i class="fas fa-sun" style="color:#fbbf24;"></i>' : '<i class="fas fa-moon" style="color:#64748b;"></i>'; }
 function getChartTextColor() { return currentTheme === 'light' ? '#475569' : '#cbd5e1'; }
+
+function applySectionAnimation() {
+  const cards = document.querySelectorAll('.view-section.active .section-card, .view-section.active .widget, .view-section.active .card');
+  cards.forEach((card, i) => {
+    card.classList.remove('reveal');
+    card.style.animationDelay = `${Math.min(i * 45, 280)}ms`;
+    requestAnimationFrame(() => card.classList.add('reveal'));
+  });
+}
+
+function typeGreeting(text) {
+  const el = document.getElementById('greetingText');
+  let idx = 0;
+  el.textContent = '';
+  const timer = setInterval(() => {
+    el.textContent += text[idx] || '';
+    idx++;
+    if (idx > text.length) clearInterval(timer);
+  }, 28);
+}
 
 function clearCanvas(canvas) {
   if (!canvas || !canvas.getContext) return null;
@@ -738,7 +768,7 @@ function showToast(msg, type='success') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div'); toast.className = `toast ${type}`;
   let icon = type==='danger' ? 'fa-exclamation-circle' : (type==='info' ? 'fa-info-circle' : 'fa-check-circle');
-  toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+  toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}<span class="bar"></span>`;
   container.appendChild(toast); setTimeout(() => toast.remove(), 3000);
 }
 
@@ -1170,6 +1200,7 @@ document.querySelectorAll('.card, .section-card, .widget').forEach(card => {
 updateFormUI();
 updateDashboard();
 updateOnlineStatus();
+applySectionAnimation();
 
 </script>
 </body>
