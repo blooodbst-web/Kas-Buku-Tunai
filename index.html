@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Kas Buku Tunai | Premium App</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <meta name="theme-color" content="#0f172a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <style>
     /* ================= CSS VARIABLES & THEMES ================= */
     :root {
@@ -14,7 +16,7 @@
       --card-border: rgba(71,85,105,0.4); --text: #f8fafc; --text-muted: #94a3b8;
       --input-bg: rgba(15,23,42,0.9); --accent: #60a5fa; --accent-hover: #3b82f6;
       --success: #10b981; --success-hover: #059669; --danger: #ef4444; --danger-hover: #dc2626;
-      --warning: #f59e0b; --shadow: 0 8px 32px rgba(0,0,0,0.3); --glass-blur: blur(20px);
+      --warning: #f59e0b; --shadow: 0 10px 0 rgba(2,6,23,0.35); --glass-blur: blur(4px);
     }
     [data-theme="light"] {
       --bg: #f8fafc; --bg-gradient-start: #f1f5f9; --bg-gradient-end: #e2e8f0;
@@ -24,8 +26,10 @@
       --shadow: 0 8px 24px rgba(148, 163, 184, 0.12);
     }
 
-    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Trebuchet MS', 'Segoe UI', 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end)); color: var(--text); min-height: 100vh; transition: background 0.4s, color 0.4s; overflow-x: hidden; }
+    body::before { content:''; position: fixed; inset: -20% -10%; pointer-events:none; background: radial-gradient(circle at 20% 20%, rgba(96,165,250,.14), transparent 45%), radial-gradient(circle at 80% 30%, rgba(139,92,246,.12), transparent 40%), radial-gradient(circle at 50% 80%, rgba(16,185,129,.10), transparent 45%); animation: ambientMove 16s ease-in-out infinite alternate; z-index: -1; }
+    @keyframes ambientMove { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 1%, 0) scale(1.06); } }
 
     /* ================= LAYOUTING ================= */
     .app-container { display: flex; min-height: 100vh; }
@@ -36,15 +40,17 @@
     .brand i { color: var(--accent); font-size: 1.8rem; }
     .nav-links { display: flex; flex-direction: column; gap: 8px; flex: 1; }
     .nav-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; font-size: 1.05rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 16px; transition: 0.3s; }
-    .nav-btn:hover { background: rgba(96, 165, 250, 0.1); color: var(--accent); }
+    .nav-btn:hover { background: rgba(96, 165, 250, 0.1); color: var(--accent); transform: translateX(4px) rotate(-.4deg); }
     .nav-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3); }
+    .nav-btn.active::after { content:''; position:absolute; inset:0; background: linear-gradient(120deg, transparent, rgba(255,255,255,.25), transparent); transform: translateX(-120%); animation: navShine 1.4s ease; }
+    @keyframes navShine { to { transform: translateX(120%); } }
 
     /* Bottom Nav (Mobile) - DIPERBAIKI */
     .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--card-border); z-index: 100; padding: 8px 12px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
     .bottom-nav .nav-links { flex-direction: row; justify-content: space-between; gap: 0; width: 100%; display: flex; }
     .bottom-nav .nav-btn { flex-direction: column; gap: 6px; padding: 10px 4px; font-size: 0.75rem; text-align: center; border-radius: 12px; flex: 1; justify-content: center; align-items: center; }
     .bottom-nav .nav-btn i { font-size: 1.4rem; margin: 0; }
-    .bottom-nav .nav-btn span { display: block; font-size: 0.7rem; font-weight: 600; } /* FIX BUG TEKS HILANG */
+    .bottom-nav .nav-btn span { display: block; font-size: 0.66rem; font-weight: 700; } /* FIX BUG TEKS HILANG */
     .bottom-nav .nav-btn.active { background: transparent; color: var(--accent); box-shadow: none; }
     
     .main-content { flex: 1; margin-left: 260px; padding: 40px; max-width: 1200px; transition: 0.3s; }
@@ -52,24 +58,39 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
     .greeting h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
     .greeting p { color: var(--text-muted); font-size: 1rem; }
+    .hero-visual { margin-bottom: 18px; border: 3px solid rgba(15,23,42,.45); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); position:relative; }
+    .hero-visual::after { content:''; position:absolute; inset:0; background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,.16) 50%, transparent 65%); transform: translateX(-120%); animation: heroShine 3.8s infinite; }
+    @keyframes heroShine { 60%,100% { transform: translateX(120%); } }
+    .hero-visual img { width: 100%; display: block; height: auto; }
+    .image-badges { display:flex; gap:12px; margin: 4px 0 16px; flex-wrap: wrap; }
+    .img-badge { background: var(--card-bg); border: 3px solid rgba(15,23,42,.4); border-radius: 16px; padding: 10px 12px; display:flex; align-items:center; gap: 10px; box-shadow: 0 6px 0 rgba(2,6,23,.24); }
+    .img-badge img { width: 52px; height: 52px; object-fit: contain; }
+    .anime-panel { margin: 10px 0 16px; background: linear-gradient(135deg, rgba(59,130,246,.22), rgba(139,92,246,.22)); border: 3px solid rgba(15,23,42,.5); border-radius: 20px; padding: 12px; display:flex; gap:12px; align-items:center; box-shadow: var(--shadow); }
+    .anime-panel img { width: 92px; height: 92px; object-fit: contain; border-radius: 14px; background: rgba(255,255,255,.2); border:2px solid rgba(255,255,255,.35); }
+    .anime-panel .bubble { background: rgba(2,6,23,.3); border:2px dashed rgba(255,255,255,.45); border-radius: 14px; padding: 10px 12px; font-weight: 700; line-height: 1.45; }
     .theme-toggle { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--text); cursor: pointer; transition: 0.3s; box-shadow: var(--shadow); }
-    .theme-toggle:hover { transform: scale(1.1); }
+    .theme-toggle:hover { transform: scale(1.1) rotate(8deg); }
 
     .view-section { display: none; animation: fadeIn 0.4s ease forwards; }
     .view-section.active { display: block; }
+    .section-card.reveal { animation: cardReveal .45s ease both; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes cardReveal { from { opacity: 0; transform: translateY(12px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
 
     /* ================= COMPONENTS (CARDS) ================= */
     .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
-    .card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--card-border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.2s; }
-    .card:hover { transform: translateY(-4px); }
+    .card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 3px solid rgba(15,23,42,.55); border-radius: 24px; padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform 0.2s, box-shadow .25s; transform-style: preserve-3d; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(59,130,246,.18); }
     .card h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
     .card .amount { font-size: 2.2rem; font-weight: 800; word-break: break-word; letter-spacing: -0.5px;}
+    .amount.pulse { animation: amountPulse .45s ease; }
+    @keyframes amountPulse { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
     
     .card.balance { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: none; }
     .card.balance h3 { color: rgba(255,255,255,0.9); }
     .card.in .amount { color: var(--success); } .card.out .amount { color: var(--danger); }
-    .card-icon { position: absolute; right: -15px; bottom: -20px; font-size: 7rem; opacity: 0.1; }
+    .card-icon { position: absolute; right: -15px; bottom: -20px; font-size: 7rem; opacity: 0.1; animation: iconFloat 4.2s ease-in-out infinite; }
+    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
     /* Progress Bar Anggaran */
     .budget-card { grid-column: span 3; padding: 20px 24px; }
@@ -77,8 +98,8 @@
     .progress-fill { height: 100%; width: 0%; background: var(--success); border-radius: 20px; transition: width 0.8s ease, background 0.4s; }
     .budget-info { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; }
 
-    .section-card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--card-border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
-    .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 16px; }
+    .section-card { background: var(--card-bg); backdrop-filter: var(--glass-blur); border: 3px solid rgba(15,23,42,.5); border-radius: 24px; padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
+    .section-title { font-size: 1.25rem; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; border-bottom: 3px dashed var(--card-border); padding-bottom: 16px; text-shadow: 1px 1px 0 rgba(2,6,23,.35); }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
     
@@ -87,7 +108,7 @@
     .form-group label { display: block; margin-bottom: 8px; font-size: 0.95rem; font-weight: 500; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     
-    input, select { width: 100%; padding: 14px 16px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 12px; color: var(--text); font-size: 1rem; transition: 0.3s; }
+    input, select { width: 100%; padding: 14px 16px; background: var(--input-bg); border: 3px solid rgba(15,23,42,.45); border-radius: 16px; color: var(--text); font-size: 1rem; transition: 0.3s; }
     input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
 
     .type-toggle { display: flex; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 6px; margin-bottom: 24px; }
@@ -97,13 +118,41 @@
     .type-toggle input:checked + label.out-label { background: var(--danger); color: #fff; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
 
     /* Buttons */
-    .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn { width: 100%; padding: 16px; border: 3px solid rgba(2,6,23,.45); border-radius: 16px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.18s; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 6px 0 rgba(2,6,23,.35); }
+    .btn:hover { transform: translateY(-2px) rotate(-.35deg); }
+    .btn:active { transform: translateY(2px) scale(.98); box-shadow: 0 2px 0 rgba(2,6,23,.35); }
     .btn-in { background: var(--success); color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); } .btn-in:hover { background: var(--success-hover); }
     .btn-out { background: var(--danger); color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); } .btn-out:hover { background: var(--danger-hover); }
     .btn-accent { background: var(--accent); color: #fff; box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2); } .btn-accent:hover { background: var(--accent-hover); }
     .btn-warning { background: var(--warning); color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text); padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; gap: 8px; }
+    .btn-outline { background: transparent; border: 3px dashed rgba(96,165,250,.6); color: var(--text); padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; gap: 8px; }
     .btn-outline:hover { background: var(--input-bg); }
+    .chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chip-btn { border:2px solid rgba(2,6,23,.35); background:var(--input-bg); color:var(--text); border-radius:999px; padding:8px 12px; font-size:.85rem; cursor:pointer; box-shadow: 0 3px 0 rgba(2,6,23,.25); transition:.18s; }
+    .chip-btn:hover { transform: translateY(-1px) rotate(-.6deg); }
+    .chip-btn.active { background: var(--accent); color:#fff; border-color: transparent; }
+    .quick-widgets { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:20px; }
+    .widget { background: var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:14px 16px; }
+    .widget small { color:var(--text-muted); display:block; margin-bottom:6px; }
+    .widget strong { font-size:1rem; }
+    .mini-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .tiny-btn { padding:8px 10px; border-radius:10px; border:2px solid rgba(15,23,42,.35); background:var(--input-bg); color:var(--text); font-size:.78rem; cursor:pointer; }
+    .undo-bar { position:fixed; left:50%; transform:translateX(-50%); bottom:90px; background:var(--card-bg); border:3px solid rgba(15,23,42,.45); border-radius:14px; padding:10px 12px; display:none; align-items:center; gap:10px; z-index:10001; box-shadow:var(--shadow); }
+    .undo-bar button { padding:6px 10px; border-radius:8px; border:2px solid rgba(15,23,42,.3); background:var(--accent); color:#fff; font-weight:700; }
+    .helper-text { font-size:.78rem; color:var(--text-muted); margin-top:6px; }
+    .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:10px; }
+    .kpi { background: var(--input-bg); border:2px solid rgba(15,23,42,.35); border-radius:12px; padding:10px; }
+    .list-mini { max-height: 180px; overflow:auto; border:2px dashed var(--card-border); border-radius:12px; padding:8px; margin-top:8px; }
+    .list-mini .row { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 4px; border-bottom:1px solid var(--card-border); }
+    .tags-preview { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .tag-pill { padding:4px 8px; border-radius:999px; background:rgba(96,165,250,.18); border:1px solid rgba(96,165,250,.35); font-size:.72rem; }
+    .btn, .nav-btn, .theme-toggle, .fab, .install-btn { position: relative; overflow: hidden; }
+    .ripple { position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.35); animation:ripple .5s linear; pointer-events:none; }
+    @keyframes ripple { to { transform:scale(4); opacity:0; } }
+    .wiggle { animation: wiggle .35s ease; }
+    @keyframes wiggle { 0% { transform: rotate(0); } 25% { transform: rotate(-2deg) scale(1.02);} 50% { transform: rotate(2deg) scale(1.04);} 100% { transform: rotate(0) scale(1);} }
+    .spark { position: fixed; width: 8px; height: 8px; border-radius: 50%; pointer-events:none; z-index: 99999; animation: sparkFly .65s ease-out forwards; }
+    @keyframes sparkFly { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
 
     /* History & Lists */
     .history-container { max-height: 500px; overflow-y: auto; padding-right: 8px; }
@@ -126,10 +175,14 @@
     .btn-del-icon { color: var(--danger); } .btn-del-icon:hover { background: rgba(239, 68, 68, 0.1); }
 
     .chart-box { position: relative; height: 300px; width: 100%; margin-top: 20px; }
+    .chart-box.compact { height: 250px; }
+    .chart-box canvas { display:block; width:100% !important; height:100% !important; max-width:100%; border-radius: 12px; }
     
     /* Toast & Modal */
     #toast-container { position: fixed; top: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
-    .toast { padding: 14px 24px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: var(--shadow); animation: slideIn 0.3s ease, fadeOut 0.3s ease 3s forwards; display: flex; align-items: center; gap: 10px; }
+    .toast { padding: 14px 24px 18px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: var(--shadow); animation: slideIn 0.3s ease, fadeOut 0.3s ease 3s forwards; display: flex; align-items: center; gap: 10px; position: relative; overflow: hidden; }
+    .toast .bar { position:absolute; left:0; bottom:0; height:3px; width:100%; background: rgba(255,255,255,.5); transform-origin:left; animation: toastBar 3s linear forwards; }
+    @keyframes toastBar { to { transform: scaleX(0); } }
     .toast.success { background: var(--success); } .toast.danger { background: var(--danger); } .toast.info { background: var(--accent); }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
@@ -140,13 +193,32 @@
     .modal-overlay.active .modal { transform: scale(1); }
 
     /* FAB Mobile - DIPERBAIKI */
-    .fab { display: none; position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s;}
+    .fab { display: none; position: fixed; bottom: calc(96px + env(safe-area-inset-bottom)); right: 18px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s; animation: fabPulse 2.2s infinite;}
+    @keyframes fabPulse { 0%,100% { box-shadow: 0 8px 20px rgba(96,165,250,.4);} 50% { box-shadow: 0 10px 26px rgba(96,165,250,.7);} }
     .fab:active { transform: scale(0.9); }
+    .fab i { animation: bob 1.8s ease-in-out infinite; }
+    @keyframes bob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-3px);} }
 
     /* Category Tag List */
     .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .cat-tag { background: var(--input-bg); border: 1px solid var(--card-border); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
     .cat-tag button { background: none; border: none; color: var(--danger); cursor: pointer; }
+
+
+    .header-actions { display:flex; align-items:center; gap:10px; }
+    .install-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text); padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+    .offline-badge { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+
+    /* Offline icon fallback (no external icon font dependency) */
+    i.fas, i.far { font-style: normal; width: 1.25em; display: inline-flex; justify-content: center; }
+    .fa-wallet::before{content:'💼';}.fa-home::before{content:'🏠';}.fa-exchange-alt::before{content:'🔁';}.fa-chart-pie::before{content:'📊';}
+    .fa-cog::before{content:'⚙️';}.fa-moon::before{content:'🌙';}.fa-sun::before{content:'☀️';}.fa-bullseye::before{content:'🎯';}
+    .fa-arrow-down::before{content:'⬇️';}.fa-arrow-up::before{content:'⬆️';}.fa-chart-line::before{content:'📈';}.fa-clock::before{content:'🕒';}
+    .fa-edit::before{content:'✏️';}.fa-check::before{content:'✅';}.fa-list::before{content:'📋';}.fa-file-excel::before{content:'📄';}
+    .fa-sliders-h::before{content:'🎚️';}.fa-plus::before{content:'➕';}.fa-database::before{content:'🗄️';}.fa-download::before{content:'⬇️';}
+    .fa-upload::before{content:'⬆️';}.fa-trash-alt::before{content:'🗑️';}.fa-exclamation-triangle::before{content:'⚠️';}.fa-exclamation-circle::before{content:'❗';}
+    .fa-info-circle::before{content:'ℹ️';}.fa-search::before{content:'🔎';}.fa-calendar::before{content:'📅';}.fa-trash::before{content:'🗑️';}
+    .fa-save::before{content:'💾';}.fa-times::before{content:'✖';}.fa-wifi::before{content:'📡';}.fa-lightbulb::before{content:'💡';}.fa-fire::before{content:'🔥';}
 
     /* ================= RESPONSIVE FIXES ================= */
     @media (max-width: 1024px) {
@@ -158,7 +230,7 @@
       .main-content { margin-left: 80px; padding: 32px; }
     }
     @media (max-width: 768px) { 
-      .stats-container, .grid-2 { grid-template-columns: 1fr; gap: 20px;} 
+      .stats-container, .grid-2, .quick-widgets { grid-template-columns: 1fr; gap: 20px;} 
       .budget-card { grid-column: span 1; } 
     }
     @media (max-width: 640px) {
@@ -167,15 +239,24 @@
       .bottom-nav { display: flex; }
       
       /* FIX PADDING MOBILE SUPAYA TIDAK KAKU DAN MEPET */
-      .main-content { margin-left: 0; padding: 24px 20px; padding-bottom: 120px; }
+      .main-content { margin-left: 0; padding: 24px 20px; padding-bottom: 132px; }
       
       header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 24px;} 
-      .theme-toggle { position: absolute; top: 24px; right: 20px; }
+      .header-actions { position: absolute; top: 20px; right: 20px; }
+      .install-btn { padding: 8px 10px; font-size: .75rem; }
+      .theme-toggle { width: 42px; height: 42px; }
       
       .fab { display: flex; align-items: center; justify-content: center; }
       
       .card, .section-card { padding: 20px; border-radius: 16px;}
       .card .amount { font-size: 1.8rem; }
+      .image-badges { gap: 8px; }
+      .img-badge { width: 100%; }
+      .anime-panel { padding: 10px; }
+      .anime-panel img { width: 78px; height: 78px; }
+      .anime-panel .bubble { font-size: .86rem; }
+      .chart-box { height: 250px; }
+      .chart-box.compact { height: 220px; }
     }
   </style>
 </head>
@@ -188,6 +269,7 @@
     <div class="nav-links">
       <button class="nav-btn active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i> <span>Dashboard</span></button>
       <button class="nav-btn" onclick="switchTab('transactions')"><i class="fas fa-exchange-alt"></i> <span>Transaksi</span></button>
+      <button class="nav-btn" onclick="switchTab('history')"><i class="fas fa-clock"></i> <span>Riwayat</span></button>
       <button class="nav-btn" onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> <span>Laporan</span></button>
       <button class="nav-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>Pengaturan</span></button>
     </div>
@@ -198,6 +280,7 @@
     <div class="nav-links">
       <button class="nav-btn active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i> <span>Home</span></button>
       <button class="nav-btn" onclick="switchTab('transactions')"><i class="fas fa-exchange-alt"></i> <span>Catat</span></button>
+      <button class="nav-btn" onclick="switchTab('history')"><i class="fas fa-clock"></i> <span>Riwayat</span></button>
       <button class="nav-btn" onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> <span>Laporan</span></button>
       <button class="nav-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>Setting</span></button>
     </div>
@@ -209,11 +292,28 @@
         <h2 id="greetingText">Halo!</h2>
         <p>Ringkasan keuangan Anda hari ini.</p>
       </div>
+      <div class="header-actions">
+      <button class="install-btn" id="installBtn" title="Install App" style="display:none"><i class="fas fa-download"></i> Install</button>
+      <span class="offline-badge" id="offlineBadge" style="display:none"><i class="fas fa-wifi"></i> Offline</span>
       <button class="theme-toggle" id="themeToggle" title="Ganti Tema"><i class="fas fa-moon"></i></button>
+      </div>
     </header>
 
     <!-- ================= VIEW 1: DASHBOARD ================= -->
     <div id="view-dashboard" class="view-section active">
+      <div class="hero-visual">
+        <img src="assets/illustrations/finance-hero.svg" alt="Ilustrasi ringkasan keuangan">
+      </div>
+      <div class="anime-panel">
+        <img src="assets/illustrations/anime-boy.svg" alt="Ilustrasi anime cowok">
+        <div class="bubble">
+          ⚡ Mode Anime Aktif! Catat transaksi harianmu biar progres keuangan makin konsisten.
+        </div>
+      </div>
+      <div class="image-badges">
+        <div class="img-badge"><img src="assets/illustrations/coin-stack.svg" alt="Ilustrasi koin"><div><strong>Kas Terkelola</strong><div style="font-size:.85rem;color:var(--text-muted)">Pantau saldo lebih visual</div></div></div>
+        <div class="img-badge"><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi grafik"><div><strong>Grafik Interaktif</strong><div style="font-size:.85rem;color:var(--text-muted)">Analitik lebih mudah dipahami</div></div></div>
+      </div>
       <div class="stats-container">
         
         <!-- Budget Progress Bar -->
@@ -237,16 +337,22 @@
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="section-card"><h2 class="section-title"><i class="fas fa-chart-line"></i> Arus Kas (7 Hari)</h2><div class="chart-box"><canvas id="flowChart"></canvas></div></div>
-        <div class="section-card"><h2 class="section-title"><i class="fas fa-clock"></i> Transaksi Terakhir</h2><div id="recentTransactions" class="history-container" style="max-height: 350px;"></div></div>
+      <div class="quick-widgets">
+        <div class="widget"><small><i class="fas fa-lightbulb"></i> Insight Bulan Ini</small><strong id="insightText">Belum ada data cukup.</strong></div>
+        <div class="widget"><small><i class="fas fa-fire"></i> Streak Catatan</small><strong id="streakText">0 hari berturut-turut</strong></div>
+        <div class="widget"><small><i class="fas fa-arrow-up"></i> Pengeluaran Hari Ini</small><strong id="todayOutText">Rp 0</strong></div>
+        <div class="widget"><small><i class="fas fa-list"></i> Total Transaksi</small><strong id="txCountText">0 data</strong></div>
+        <div class="widget"><small><i class="fas fa-chart-line"></i> Prediksi Saldo Akhir Bulan</small><strong id="forecastText">Rp 0</strong></div>
+        <div class="widget"><small><i class="fas fa-exclamation-circle"></i> Anomali Mingguan</small><strong id="anomalyText">Normal</strong></div>
+        <div class="widget"><small><i class="fas fa-bullseye"></i> Skor Keuangan</small><strong id="scoreText">0/100</strong></div>
       </div>
+
+      <div class="section-card"><h2 class="section-title"><i class="fas fa-chart-line"></i> Arus Kas (7 Hari)</h2><div class="chart-box"><canvas id="flowChart"></canvas></div></div>
     </div>
 
     <!-- ================= VIEW 2: TRANSAKSI ================= -->
     <div id="view-transactions" class="view-section">
-      <div class="grid-2">
-        <div class="section-card" style="position: sticky; top: 20px;">
+      <div class="section-card" style="max-width: 760px; margin: 0 auto 24px;">
           <h2 class="section-title" id="formTitle"><i class="fas fa-edit"></i> Catat Transaksi</h2>
           <form id="formKas">
             <div class="type-toggle">
@@ -255,24 +361,44 @@
               <input type="radio" id="typeOut" name="jenis" value="out">
               <label for="typeOut" class="out-label">Pengeluaran</label>
             </div>
-            <div class="form-group"><label>Keterangan</label><input type="text" id="keterangan" placeholder="Contoh: Gaji, Jualan, Beli Kuota" required autocomplete="off"></div>
+            <div class="form-group"><label>Keterangan</label><input type="text" id="keterangan" placeholder="Contoh: Gaji, Jualan, Beli Kuota" required autocomplete="off" maxlength="60"><div class="helper-text" id="ketCounter">0/60</div></div>
+            <div class="form-group"><label>Tag (pisahkan koma)</label><input type="text" id="tagsInput" placeholder="#makan,#kantor" autocomplete="off"><div class="tags-preview" id="tagsPreview"></div></div>
             <div class="form-row">
               <div class="form-group">
                 <label>Kategori</label>
                 <select id="kategori" required><option value="">-- pilih --</option></select>
+                <div class="chip-row" id="recentCatChips" style="margin-top:8px;"></div>
               </div>
               <div class="form-group"><label>Tanggal</label><input type="date" id="tanggal" required></div>
             </div>
-            <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nominal" placeholder="0" min="1" step="1" required></div>
+            <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="nominal" placeholder="0" min="1" step="1" required>
+              <div class="chip-row">
+                <button type="button" class="chip-btn" onclick="setQuickNominal(50000)">50rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(100000)">100rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(200000)">200rb</button>
+                <button type="button" class="chip-btn" onclick="setQuickNominal(500000)">500rb</button>
+              </div>
+            </div>
             <button type="submit" class="btn btn-in" id="btnSubmit"><i class="fas fa-check"></i> Simpan Pemasukan</button>
             <button type="button" class="btn-outline" id="btnCancelEdit" style="display: none; margin-top:10px; width: 100%;" onclick="cancelEdit()">Batal Edit</button>
           </form>
         </div>
-        <div class="section-card">
-          <h2 class="section-title"><i class="fas fa-list"></i> Riwayat Transaksi</h2>
-          <div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
-          <div class="history-container" id="listTransaksi"></div>
+    </div>
+
+
+    <!-- ================= VIEW 3: RIWAYAT ================= -->
+    <div id="view-history" class="view-section">
+      <div class="section-card">
+        <h2 class="section-title"><i class="fas fa-clock"></i> Riwayat Transaksi</h2>
+        <div class="chip-row" style="margin-bottom:12px;">
+          <button class="chip-btn active" id="filter-all" onclick="setTransFilter('all')">Semua</button>
+          <button class="chip-btn" id="filter-in" onclick="setTransFilter('in')">Pemasukan</button>
+          <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
         </div>
+        <div class="mini-actions"><select id="transSort" style="max-width:170px"><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="largest">Nominal Tertinggi</option></select><button class="tiny-btn" type="button" onclick="resetTransControls()">Reset Filter</button></div>
+        <div style="margin:12px 0 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori / tag..." oninput="updateTransactions()"></div>
+        <div class="mini-actions"><button class="tiny-btn" type="button" onclick="toggleBulkMode()">Mode Bulk</button><button class="tiny-btn" type="button" onclick="bulkDelete()">Hapus Terpilih</button></div>
+        <div class="history-container" id="listTransaksi"></div>
       </div>
     </div>
 
@@ -290,7 +416,7 @@
           </select>
         </div>
         <div class="grid-2">
-          <div><h3 style="margin-bottom: 16px;">Distribusi Pengeluaran</h3><div class="chart-box"><canvas id="expenseChart"></canvas></div></div>
+          <div><h3 style="margin-bottom: 10px;">Distribusi Pengeluaran</h3><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi distribusi" style="width:128px;display:block;margin-bottom:10px;filter: drop-shadow(0 6px 10px rgba(16,185,129,.22));"><div class="chart-box compact"><canvas id="expenseChart"></canvas></div></div>
           <div>
             <div style="background: var(--input-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--card-border); text-align: center; margin-bottom: 20px;">
               <p style="color:var(--text-muted); margin-bottom:10px; font-weight: 500;">Selisih Keuangan (<span id="judulPeriode">Bulan Ini</span>)</p>
@@ -300,7 +426,7 @@
                 <span style="color:var(--danger)"><i class="fas fa-arrow-up"></i> <span id="rekapKeluar">Rp 0</span></span>
               </div>
             </div>
-            <button class="btn btn-in" onclick="exportToCSV()"><i class="fas fa-file-excel"></i> Download Laporan (.CSV)</button>
+            <button class="btn btn-in" onclick="exportToCSV()"><i class="fas fa-file-excel"></i> Download Laporan (.CSV)</button><button class="btn btn-outline" style="margin-top:10px" onclick="copySummary()"><i class="fas fa-check"></i> Salin Ringkasan</button>
           </div>
         </div>
       </div>
@@ -321,7 +447,29 @@
             </div>
           </div>
 
-          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Manajemen Kategori</h3>
+          
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Target Tabungan & Skor</h3>
+          <div class="form-group">
+            <label>Target Tabungan (Rp)</label>
+            <div style="display:flex; gap:10px;"><input type="number" id="savingGoalInput" min="0" placeholder="Contoh: 10000000"><button class="btn btn-accent" style="width:auto; padding:0 16px;" onclick="saveSavingGoal()">Simpan</button></div>
+            <div class="helper-text" id="savingGoalInfo">Belum ada target.</div>
+          </div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Budget Per Kategori</h3>
+          <div class="mini-actions"><select id="budgetCatType"><option value="out">Pengeluaran</option><option value="in">Pemasukan</option></select><select id="budgetCatSelect"></select><input type="number" id="budgetCatAmount" min="0" placeholder="Limit"></div>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="saveCategoryBudget()">Simpan Budget Kategori</button>
+          <div class="list-mini" id="budgetCatList"></div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Transaksi Berulang</h3>
+          <div class="mini-actions"><input type="text" id="recDesc" placeholder="Keterangan"><input type="number" id="recAmount" min="1" placeholder="Nominal"><select id="recType"><option value="out">Pengeluaran</option><option value="in">Pemasukan</option></select><select id="recFreq"><option value="daily">Harian</option><option value="weekly">Mingguan</option><option value="monthly">Bulanan</option></select></div>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="addRecurringRule()">Tambah Berulang</button>
+          <div class="list-mini" id="recurringList"></div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Reminder Harian</h3>
+          <div class="mini-actions"><input type="time" id="reminderTime" value="20:00"><button class="btn btn-outline" style="width:auto" onclick="saveReminder()">Simpan Reminder</button><button class="btn btn-outline" style="width:auto" onclick="requestNotifPermission()">Izin Notif</button></div>
+          <div class="helper-text" id="reminderInfo">Belum diatur.</div>
+
+<h3 style="font-size: 1.05rem; margin-bottom: 16px; border-top: 1px solid var(--card-border); padding-top: 24px;">Manajemen Kategori</h3>
           
           <div class="form-group">
             <label style="color:var(--success)">Kategori Pemasukan</label>
@@ -371,6 +519,7 @@
 
 <!-- TOAST & MODAL -->
 <div id="toast-container"></div>
+<div id="undoBar" class="undo-bar"><span id="undoText">Transaksi dihapus</span><button onclick="undoDelete()">Undo</button></div>
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <div style="font-size: 3rem; color: var(--danger); margin-bottom: 12px;"><i class="fas fa-exclamation-triangle"></i></div>
@@ -386,15 +535,87 @@
 // ────────────────────────────────────────────────
 // APP STATE & STORAGE
 // ────────────────────────────────────────────────
-let data = JSON.parse(localStorage.getItem('kasBukuTunai')) ||[];
-let budgetLimit = parseInt(localStorage.getItem('kasBudget')) || 0;
+const defaultCatIn = ["Gaji", "Penjualan", "Pemberian", "Lain-lain"];
+const defaultCatOut = ["Makan", "Transportasi", "Tagihan", "Utang", "Lain-lain"];
 
-let customCatIn = JSON.parse(localStorage.getItem('katIn')) ||["Gaji", "Penjualan", "Pemberian", "Lain-lain"];
-let customCatOut = JSON.parse(localStorage.getItem('katOut')) ||["Makan", "Transportasi", "Tagihan", "Utang", "Lain-lain"];
+function safeJsonParse(key, fallback) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
 
-let expenseChartInst = null; 
-let flowChartInst = null; 
+function parseDateLocal(value) {
+  if (!value || typeof value !== 'string') return null;
+  const parts = value.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function normalizeNominal(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n);
+}
+
+function escapeHTML(text) {
+  const node = document.createElement('div');
+  node.textContent = String(text ?? '');
+  return node.innerHTML;
+}
+
+function normalizeTransaction(item) {
+  if (!item || typeof item !== 'object') return null;
+  const jenis = item.jenis === 'in' ? 'in' : (item.jenis === 'out' ? 'out' : null);
+  const tanggalObj = parseDateLocal(item.tanggal);
+  const nominal = normalizeNominal(item.nominal);
+  const keterangan = (item.keterangan || '').toString().trim();
+  const kategori = (item.kategori || '').toString().trim();
+  if (!jenis || !tanggalObj || !nominal || !keterangan || !kategori) return null;
+  return {
+    id: Number.isFinite(Number(item.id)) ? Number(item.id) : Date.now(),
+    jenis,
+    keterangan,
+    kategori,
+    nominal,
+    tanggal: item.tanggal,
+    tags: Array.isArray(item.tags) ? item.tags.map(x => String(x).trim()).filter(Boolean).slice(0, 8) : []
+  };
+}
+
+function sanitizeCategoryList(list, fallback) {
+  if (!Array.isArray(list)) return [...fallback];
+  const cleaned = list
+    .map(item => (item || '').toString().trim())
+    .filter(Boolean);
+  return cleaned.length ? [...new Set(cleaned)] : [...fallback];
+}
+
+let data = (safeJsonParse('kasBukuTunai', []) || [])
+  .map(normalizeTransaction)
+  .filter(Boolean);
+let budgetLimit = Math.max(0, parseInt(localStorage.getItem('kasBudget'), 10) || 0);
+
+let customCatIn = sanitizeCategoryList(safeJsonParse('katIn', defaultCatIn), defaultCatIn);
+let customCatOut = sanitizeCategoryList(safeJsonParse('katOut', defaultCatOut), defaultCatOut);
+
 let editId = null;
+let transFilterType = "all";
+let transSortType = "newest";
+let prevDashboard = { saldo: 0, masuk: 0, keluar: 0 };
+let lastDeleted = null;
+let undoTimer = null;
+let bulkMode = false;
+let selectedIds = new Set();
+let templates = (safeJsonParse('txTemplates', []) || []).filter(t => t && typeof t === 'object');
+let recurringRules = (safeJsonParse('recurringRules', []) || []).filter(r => r && typeof r === 'object');
+let categoryBudgets = safeJsonParse('categoryBudgets', {}) || {};
+if (!categoryBudgets || typeof categoryBudgets !== 'object' || Array.isArray(categoryBudgets)) categoryBudgets = {};
+let savingGoal = Math.max(0, parseInt(localStorage.getItem('savingGoal'), 10) || 0);
+let reminderTime = localStorage.getItem('reminderTime') || "";
 
 document.getElementById('tanggal').valueAsDate = new Date();
 
@@ -404,7 +625,7 @@ let greeting = "Selamat Pagi!";
 if (hour >= 11 && hour < 15) greeting = "Selamat Siang!";
 else if (hour >= 15 && hour < 18) greeting = "Selamat Sore!";
 else if (hour >= 18) greeting = "Selamat Malam!";
-document.getElementById('greetingText').innerText = greeting;
+typeGreeting(greeting);
 
 // ────────────────────────────────────────────────
 // NAVIGATION & THEME
@@ -412,16 +633,22 @@ document.getElementById('greetingText').innerText = greeting;
 function switchTab(tabId) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.remove('active');
-    if(btn.getAttribute('onclick').includes(`'${tabId}'`)) btn.classList.add('active');
+    if (btn.getAttribute('onclick')?.includes(`'${tabId}'`)) btn.classList.add('active');
   });
   document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
   document.getElementById('view-' + tabId).classList.add('active');
 
   const fab = document.querySelector('.fab');
-  if (tabId === 'transactions') fab.style.display = 'none';
-  else if (window.innerWidth <= 640) fab.style.display = 'flex';
+  if (tabId === 'dashboard' && window.innerWidth <= 640) fab.style.display = 'flex';
+  else fab.style.display = 'none';
 
   refreshCurrentView();
+  applySectionAnimation();
+  const activeBtn = document.querySelector('.nav-btn.active');
+  if (activeBtn) {
+    const r = activeBtn.getBoundingClientRect();
+    spawnSparkBurst(r.left + r.width / 2, r.top + r.height / 2, ['#60a5fa', '#8b5cf6', '#f59e0b']);
+  }
 }
 
 const themeToggle = document.getElementById('themeToggle');
@@ -435,10 +662,149 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem('theme', currentTheme);
   updateThemeIcon();
   refreshCurrentView();
+  applySectionAnimation();
+  const activeBtn = document.querySelector('.nav-btn.active');
+  if (activeBtn) {
+    const r = activeBtn.getBoundingClientRect();
+    spawnSparkBurst(r.left + r.width / 2, r.top + r.height / 2, ['#60a5fa', '#8b5cf6', '#f59e0b']);
+  }
 });
 
 function updateThemeIcon() { themeToggle.innerHTML = currentTheme === 'dark' ? '<i class="fas fa-sun" style="color:#fbbf24;"></i>' : '<i class="fas fa-moon" style="color:#64748b;"></i>'; }
 function getChartTextColor() { return currentTheme === 'light' ? '#475569' : '#cbd5e1'; }
+
+function applySectionAnimation() {
+  const cards = document.querySelectorAll('.view-section.active .section-card, .view-section.active .widget, .view-section.active .card');
+  cards.forEach((card, i) => {
+    card.classList.remove('reveal');
+    card.style.animationDelay = `${Math.min(i * 45, 280)}ms`;
+    requestAnimationFrame(() => card.classList.add('reveal'));
+  });
+}
+
+function typeGreeting(text) {
+  const el = document.getElementById('greetingText');
+  let idx = 0;
+  el.textContent = '';
+  const timer = setInterval(() => {
+    el.textContent += text[idx] || '';
+    idx++;
+    if (idx > text.length) clearInterval(timer);
+  }, 28);
+}
+
+function clearCanvas(canvas) {
+  if (!canvas || !canvas.getContext) return null;
+  const ratio = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(240, Math.floor(rect.width || canvas.parentElement?.clientWidth || 320));
+  const height = Math.max(180, Math.floor(rect.height || 300));
+
+  canvas.width = Math.floor(width * ratio);
+  canvas.height = Math.floor(height * ratio);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(ratio, ratio);
+  ctx.clearRect(0, 0, width, height);
+  return { ctx, width, height };
+}
+
+function drawLineChart(canvas, labels, inVals, outVals) {
+  if (!canvas) return;
+  const result = clearCanvas(canvas);
+  if (!result) return;
+  const { ctx, width, height } = result;
+  const pad = { top: 16, right: 12, bottom: 26, left: 40 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const maxVal = Math.max(1, ...inVals, ...outVals);
+  const hasData = [...inVals, ...outVals].some(v => v > 0);
+
+  ctx.strokeStyle = 'rgba(148,163,184,0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (innerH * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
+  }
+
+  const drawSeries = (vals, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    vals.forEach((v, i) => {
+      const x = pad.left + (innerW * i / (vals.length - 1 || 1));
+      const y = pad.top + innerH - ((v / maxVal) * innerH);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+
+  if (hasData) {
+    drawSeries(inVals, '#10b981');
+    drawSeries(outVals, '#ef4444');
+  } else {
+    ctx.fillStyle = getChartTextColor();
+    ctx.font = '600 13px Inter, sans-serif';
+    ctx.fillText('Belum ada data transaksi 7 hari terakhir', pad.left + 6, pad.top + innerH / 2);
+  }
+
+  ctx.fillStyle = getChartTextColor();
+  const isMobile = width < 420;
+  ctx.font = isMobile ? '10px Inter, sans-serif' : '11px Inter, sans-serif';
+  labels.forEach((lb, i) => {
+    if (isMobile && (i % 2 === 1)) return;
+    const x = pad.left + (innerW * i / (labels.length - 1 || 1));
+    const safeX = Math.max(2, Math.min(width - 28, x - (isMobile ? 6 : 12)));
+    ctx.fillText(lb, safeX, height - 8);
+  });
+}
+
+function drawDoughnutChart(canvas, labels, values) {
+  if (!canvas) return;
+  const result = clearCanvas(canvas);
+  if (!result) return;
+  const { ctx, width, height } = result;
+  const total = values.reduce((a, b) => a + b, 0);
+  if (!total) {
+    ctx.fillStyle = getChartTextColor();
+    ctx.font = '600 14px Inter, sans-serif';
+    ctx.fillText('Belum ada pengeluaran di periode ini', 16, height / 2);
+    return;
+  }
+  const colors = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#3b82f6','#8b5cf6','#ec4899','#64748b'];
+  const isMobile = width < 560;
+  const cx = isMobile ? width / 2 : width * 0.34;
+  const cy = isMobile ? (height * 0.42) : (height / 2);
+  const radius = Math.min(width, height) * (isMobile ? 0.22 : 0.28);
+  let start = -Math.PI / 2;
+  values.forEach((val, i) => {
+    const angle = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, start, start + angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    start += angle;
+  });
+  ctx.beginPath();
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim() || '#111827';
+  ctx.arc(cx, cy, radius * 0.58, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = getChartTextColor();
+  ctx.font = '600 12px Inter, sans-serif';
+  labels.forEach((lb, i) => {
+    const col = i % colors.length;
+    const y = (isMobile ? (height * 0.72) : 24) + (i * 18);
+    const x = isMobile ? 18 : width * 0.62;
+    if (y > height - 8) return;
+    ctx.fillStyle = colors[col];
+    ctx.fillRect(x, y - 8, 10, 10);
+    ctx.fillStyle = getChartTextColor();
+    const text = `${lb}: ${formatRp(values[i])}`;
+    ctx.fillText(text.length > 34 ? `${text.slice(0, 34)}…` : text, x + 14, y);
+  });
+}
 
 // ────────────────────────────────────────────────
 // UTILS & ALERTS
@@ -446,11 +812,336 @@ function getChartTextColor() { return currentTheme === 'light' ? '#475569' : '#c
 function save() { localStorage.setItem('kasBukuTunai', JSON.stringify(data)); refreshCurrentView(); }
 function formatRp(num) { return 'Rp ' + num.toLocaleString('id-ID'); }
 
+function setQuickNominal(value) {
+  document.getElementById('nominal').value = value;
+  showToast(`Nominal diisi ${formatRp(value)}`, 'info');
+}
+
+function setTransFilter(type) {
+  transFilterType = type;
+  ['all', 'in', 'out'].forEach(x => document.getElementById(`filter-${x}`)?.classList.toggle('active', x === type));
+  updateTransactions();
+}
+
+function resetTransControls() {
+  transFilterType = 'all';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('transSort').value = 'newest';
+  transSortType = 'newest';
+  setTransFilter('all');
+}
+
+function renderRecentCategoryChips() {
+  const box = document.getElementById('recentCatChips');
+  if (!box) return;
+  const jenis = document.querySelector('input[name="jenis"]:checked').value;
+  const map = {};
+  data.filter(x => x.jenis === jenis).forEach(x => { map[x.kategori] = (map[x.kategori] || 0) + 1; });
+  const top = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,4).map(x => x[0]);
+  box.innerHTML = '';
+  top.forEach(cat => {
+    box.innerHTML += `<button type="button" class="chip-btn" onclick="pickCategory('${cat.replace(/'/g, "\'")}')">${escapeHTML(cat)}</button>`;
+  });
+}
+
+function pickCategory(cat) {
+  document.getElementById('kategori').value = cat;
+}
+
+function showUndoBar(item) {
+  const bar = document.getElementById('undoBar');
+  const text = document.getElementById('undoText');
+  text.textContent = `Dihapus: ${item.keterangan}`;
+  bar.style.display = 'flex';
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    bar.style.display = 'none';
+    lastDeleted = null;
+  }, 4500);
+}
+
+function undoDelete() {
+  if (!lastDeleted) return;
+  data.push(lastDeleted);
+  save();
+  showToast('Berhasil dibatalkan!', 'info');
+  document.getElementById('undoBar').style.display = 'none';
+  lastDeleted = null;
+}
+
+function parseTagsInput(raw) {
+  if (!raw) return [];
+  return [...new Set(raw.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean).slice(0, 8))];
+}
+
+function renderTagsPreview() {
+  const preview = document.getElementById('tagsPreview');
+  if (!preview) return;
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
+  preview.innerHTML = tags.map(t => `<span class="tag-pill">#${escapeHTML(t)}</span>`).join('');
+}
+
+function renderTemplateList() {
+  const box = document.getElementById('templateList');
+  if (!box) return;
+  if (!templates.length) {
+    box.innerHTML = '<div class="helper-text">Belum ada template transaksi.</div>';
+    return;
+  }
+  box.innerHTML = templates.map((t, idx) => `<div class="row"><span>${escapeHTML(t.keterangan)} (${formatRp(t.nominal)})</span><span><button class="tiny-btn" onclick="applyTemplate(${idx})">Pakai</button> <button class="tiny-btn" onclick="deleteTemplate(${idx})">Hapus</button></span></div>`).join('');
+}
+
+function saveTemplate() {
+  const jenis = document.querySelector('input[name="jenis"]:checked').value;
+  const keterangan = document.getElementById('keterangan').value.trim();
+  const kategori = document.getElementById('kategori').value;
+  const nominal = normalizeNominal(document.getElementById('nominal').value);
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
+  if (!keterangan || !kategori || !nominal) return showToast('Isi form dulu untuk template', 'danger');
+  templates.push({ jenis, keterangan, kategori, nominal, tags });
+  templates = templates.slice(-15);
+  localStorage.setItem('txTemplates', JSON.stringify(templates));
+  renderTemplateList();
+  showToast('Template disimpan', 'success');
+}
+
+function applyTemplate(index) {
+  const t = templates[index];
+  if (!t) return;
+  document.getElementById(t.jenis === 'in' ? 'typeIn' : 'typeOut').checked = true;
+  updateFormUI();
+  document.getElementById('keterangan').value = t.keterangan;
+  document.getElementById('kategori').value = t.kategori;
+  document.getElementById('nominal').value = t.nominal;
+  document.getElementById('tagsInput').value = (t.tags || []).join(', ');
+  renderTagsPreview();
+  showToast('Template dipakai', 'info');
+}
+
+function deleteTemplate(index) {
+  templates.splice(index, 1);
+  localStorage.setItem('txTemplates', JSON.stringify(templates));
+  renderTemplateList();
+}
+
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  selectedIds.clear();
+  showToast(bulkMode ? 'Mode bulk aktif' : 'Mode bulk nonaktif', 'info');
+  updateTransactions();
+}
+
+function toggleSelectTx(id, checked) {
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+}
+
+function bulkDelete() {
+  if (!selectedIds.size) return showToast('Belum ada yang dipilih', 'danger');
+  showConfirm('Hapus banyak transaksi?', `${selectedIds.size} data akan dihapus`, () => {
+    data = data.filter(d => !selectedIds.has(d.id));
+    selectedIds.clear();
+    save();
+    showToast('Bulk delete berhasil', 'danger');
+  });
+}
+
+function updateBudgetCategorySelect() {
+  const type = document.getElementById('budgetCatType')?.value || 'out';
+  const sel = document.getElementById('budgetCatSelect');
+  if (!sel) return;
+  const source = type === 'in' ? customCatIn : customCatOut;
+  sel.innerHTML = source.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+}
+
+function renderCategoryBudgetList() {
+  const box = document.getElementById('budgetCatList');
+  if (!box) return;
+  const keys = Object.keys(categoryBudgets);
+  if (!keys.length) return box.innerHTML = '<div class="helper-text">Belum ada budget kategori.</div>';
+  box.innerHTML = keys.map(k => `<div class="row"><span>${escapeHTML(k)}: ${formatRp(categoryBudgets[k])}</span><button class="tiny-btn" onclick="removeCategoryBudget(decodeURIComponent('${encodeURIComponent(k)}'))">Hapus</button></div>`).join('');
+}
+
+function saveCategoryBudget() {
+  const type = document.getElementById('budgetCatType').value;
+  const cat = document.getElementById('budgetCatSelect').value;
+  const amount = Math.max(0, parseInt(document.getElementById('budgetCatAmount').value, 10) || 0);
+  if (!cat || !amount) return showToast('Isi kategori dan limit', 'danger');
+  categoryBudgets[`${type}:${cat}`] = amount;
+  localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+  renderCategoryBudgetList();
+  showToast('Budget kategori disimpan', 'success');
+}
+
+function removeCategoryBudget(key) {
+  delete categoryBudgets[key];
+  localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets));
+  renderCategoryBudgetList();
+}
+
+function addRecurringRule() {
+  const keterangan = document.getElementById('recDesc').value.trim();
+  const nominal = normalizeNominal(document.getElementById('recAmount').value);
+  const jenis = document.getElementById('recType').value;
+  const freq = document.getElementById('recFreq').value;
+  const kategori = (jenis === 'in' ? customCatIn[0] : customCatOut[0]) || 'Lain-lain';
+  if (!keterangan || !nominal) return showToast('Isi data berulang dulu', 'danger');
+  recurringRules.push({ id: Date.now(), keterangan, nominal, jenis, freq, kategori, lastRun: '' });
+  localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+  renderRecurringList();
+  showToast('Aturan berulang ditambahkan', 'success');
+}
+
+function renderRecurringList() {
+  const box = document.getElementById('recurringList');
+  if (!box) return;
+  if (!recurringRules.length) return box.innerHTML = '<div class="helper-text">Belum ada transaksi berulang.</div>';
+  box.innerHTML = recurringRules.map((r, i) => `<div class="row"><span>${escapeHTML(r.keterangan)} (${r.freq})</span><button class="tiny-btn" onclick="deleteRecurring(${i})">Hapus</button></div>`).join('');
+}
+
+function deleteRecurring(i) {
+  recurringRules.splice(i,1);
+  localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+  renderRecurringList();
+}
+
+function runRecurringAuto() {
+  const today = new Date();
+  const tStr = today.toISOString().split('T')[0];
+  let added = 0;
+  recurringRules.forEach(rule => {
+    const last = rule.lastRun ? parseDateLocal(rule.lastRun) : null;
+    let should = false;
+    if (!last) should = true;
+    else if (rule.freq === 'daily') should = (today - last) / 86400000 >= 1;
+    else if (rule.freq === 'weekly') should = (today - last) / 86400000 >= 7;
+    else if (rule.freq === 'monthly') should = today.getMonth() !== last.getMonth() || today.getFullYear() !== last.getFullYear();
+    if (should) {
+      data.push({ id: Date.now() + Math.floor(Math.random()*999), jenis: rule.jenis, keterangan: `${rule.keterangan} (Auto)`, kategori: rule.kategori, nominal: rule.nominal, tanggal: tStr, tags: ['auto'] });
+      rule.lastRun = tStr;
+      added++;
+    }
+  });
+  if (added) {
+    localStorage.setItem('recurringRules', JSON.stringify(recurringRules));
+    save();
+    showToast(`${added} transaksi berulang ditambahkan`, 'info');
+  }
+}
+
+function saveSavingGoal() {
+  savingGoal = Math.max(0, parseInt(document.getElementById('savingGoalInput').value, 10) || 0);
+  localStorage.setItem('savingGoal', savingGoal);
+  updateGoalInfo();
+  showToast('Target tabungan disimpan', 'success');
+}
+
+function updateGoalInfo() {
+  const info = document.getElementById('savingGoalInfo');
+  if (!info) return;
+  const saldo = data.filter(d=>d.jenis==='in').reduce((a,b)=>a+b.nominal,0)-data.filter(d=>d.jenis==='out').reduce((a,b)=>a+b.nominal,0);
+  if (!savingGoal) return info.textContent = 'Belum ada target.';
+  const pct = Math.min(100, Math.round((saldo / savingGoal) * 100));
+  info.textContent = `Progress: ${formatRp(Math.max(0,saldo))} / ${formatRp(savingGoal)} (${pct}%)`;
+}
+
+function saveReminder() {
+  reminderTime = document.getElementById('reminderTime').value;
+  localStorage.setItem('reminderTime', reminderTime);
+  document.getElementById('reminderInfo').textContent = reminderTime ? `Reminder aktif jam ${reminderTime}` : 'Belum diatur.';
+  showToast('Reminder disimpan', 'success');
+}
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) return showToast('Browser tidak mendukung notif', 'danger');
+  Notification.requestPermission().then(p => showToast(`Status notif: ${p}`, 'info'));
+}
+
+function checkReminderTick() {
+  if (!reminderTime) return;
+  const now = new Date();
+  const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if (hm === reminderTime && Notification.permission === 'granted') {
+    new Notification('KasTunai Reminder', { body: 'Jangan lupa catat transaksi hari ini ✍️' });
+  }
+}
+
+function computeForecastAndScore() {
+  const now = new Date();
+  const monthData = data.filter(d => { const dt = parseDateLocal(d.tanggal); return dt && dt.getMonth()===now.getMonth() && dt.getFullYear()===now.getFullYear(); });
+  const daysPassed = Math.max(1, now.getDate());
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const net = monthData.reduce((a,b)=>a+(b.jenis==='in'?b.nominal:-b.nominal),0);
+  const forecast = Math.round((net/daysPassed)*daysInMonth);
+  document.getElementById('forecastText').textContent = formatRp(forecast);
+
+  const last7 = data.filter(d=>{const dt=parseDateLocal(d.tanggal); if(!dt) return false; return (now-dt)/86400000<=7 && d.jenis==='out';}).reduce((a,b)=>a+b.nominal,0);
+  const prev7 = data.filter(d=>{const dt=parseDateLocal(d.tanggal); if(!dt) return false; const dd=(now-dt)/86400000; return dd>7 && dd<=14 && d.jenis==='out';}).reduce((a,b)=>a+b.nominal,0);
+  document.getElementById('anomalyText').textContent = prev7>0 && last7>prev7*1.5 ? '⚠️ Boros minggu ini' : 'Normal';
+
+  const inTotal = monthData.filter(d=>d.jenis==='in').reduce((a,b)=>a+b.nominal,0);
+  const outTotal = monthData.filter(d=>d.jenis==='out').reduce((a,b)=>a+b.nominal,0);
+  let score = 50;
+  if (inTotal>0) score += Math.max(-20, Math.min(30, Math.round(((inTotal-outTotal)/inTotal)*100/2)));
+  score += Math.min(20, calcStreakDays(data));
+  score = Math.max(0, Math.min(100, score));
+  document.getElementById('scoreText').textContent = `${score}/100`;
+}
+
+function calcStreakDays(items) {
+  if (!items.length) return 0;
+  const uniq = [...new Set(items.map(i => i.tanggal))].sort((a, b) => (a > b ? -1 : 1));
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  for (let i = 0; i < uniq.length; i++) {
+    const d = parseDateLocal(uniq[i]);
+    if (!d) continue;
+    const expected = new Date(today);
+    expected.setDate(today.getDate() - i);
+    if (d.getTime() === expected.getTime()) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function animateCurrency(el, from, to) {
+  if (!el) return;
+  const start = performance.now();
+  const duration = 420;
+  const delta = to - from;
+  el.classList.remove('pulse');
+  requestAnimationFrame(() => el.classList.add('pulse'));
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatRp(Math.round(from + (delta * eased)));
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function spawnSparkBurst(x, y, colors = ['#60a5fa', '#10b981', '#f59e0b', '#8b5cf6']) {
+  for (let i = 0; i < 14; i++) {
+    const spark = document.createElement('span');
+    spark.className = 'spark';
+    spark.style.left = `${x}px`;
+    spark.style.top = `${y}px`;
+    spark.style.background = colors[i % colors.length];
+    const angle = (Math.PI * 2 * i) / 14;
+    const dist = 28 + Math.random() * 32;
+    spark.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    spark.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(spark);
+    setTimeout(() => spark.remove(), 700);
+  }
+}
+
 function showToast(msg, type='success') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div'); toast.className = `toast ${type}`;
   let icon = type==='danger' ? 'fa-exclamation-circle' : (type==='info' ? 'fa-info-circle' : 'fa-check-circle');
-  toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+  const flair = type === 'danger' ? '💥' : (type === 'info' ? '✨' : '🎉');
+  toast.innerHTML = `<i class="fas ${icon}"></i> ${flair} ${msg}<span class="bar"></span>`;
   container.appendChild(toast); setTimeout(() => toast.remove(), 3000);
 }
 
@@ -466,7 +1157,7 @@ document.getElementById('modalConfirmBtn').addEventListener('click', () => { if(
 
 function refreshCurrentView() {
   if(document.getElementById('view-dashboard').classList.contains('active')) updateDashboard();
-  if(document.getElementById('view-transactions').classList.contains('active')) updateTransactions();
+  if(document.getElementById('view-history').classList.contains('active')) updateTransactions();
   if(document.getElementById('view-reports').classList.contains('active')) updateReports();
   if(document.getElementById('view-settings').classList.contains('active')) updateSettingsUI();
 }
@@ -477,17 +1168,28 @@ function refreshCurrentView() {
 function updateDashboard() {
   const totalMasuk = data.filter(d => d.jenis === 'in').reduce((a,b) => a + b.nominal, 0);
   const totalKeluar = data.filter(d => d.jenis === 'out').reduce((a,b) => a + b.nominal, 0);
-  document.getElementById('dashSaldo').textContent = formatRp(totalMasuk - totalKeluar);
 
   const now = new Date();
   const monthData = data.filter(d => {
-    const dt = new Date(d.tanggal); return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    const dt = parseDateLocal(d.tanggal);
+    return dt && dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
   });
   const mIn = monthData.filter(d => d.jenis === 'in').reduce((a,b) => a+b.nominal, 0);
   const mOut = monthData.filter(d => d.jenis === 'out').reduce((a,b) => a+b.nominal, 0);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayOut = data.filter(d => d.jenis === "out" && d.tanggal === todayStr).reduce((a,b)=>a+b.nominal,0);
+  document.getElementById("todayOutText").textContent = formatRp(todayOut);
+  document.getElementById("txCountText").textContent = `${data.length} data`;
+  const topOut = Object.entries(monthData.filter(d => d.jenis === 'out').reduce((acc, cur) => { acc[cur.kategori] = (acc[cur.kategori] || 0) + cur.nominal; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+  computeForecastAndScore();
+  const insight = topOut ? `Kategori terbesar: ${topOut[0]} (${formatRp(topOut[1])})` : 'Belum ada pengeluaran bulan ini.';
+  document.getElementById('insightText').textContent = insight;
   
-  document.getElementById('dashMasuk').textContent = formatRp(mIn);
-  document.getElementById('dashKeluar').textContent = formatRp(mOut);
+  const saldoNow = totalMasuk - totalKeluar;
+  animateCurrency(document.getElementById('dashSaldo'), prevDashboard.saldo, saldoNow);
+  animateCurrency(document.getElementById('dashMasuk'), prevDashboard.masuk, mIn);
+  animateCurrency(document.getElementById('dashKeluar'), prevDashboard.keluar, mOut);
+  prevDashboard = { saldo: saldoNow, masuk: mIn, keluar: mOut };
 
   // BUDGET BAR
   const wrapper = document.getElementById('budgetCardWrapper');
@@ -506,47 +1208,30 @@ function updateDashboard() {
     document.getElementById('budgetLimit').textContent = `Limit: ${formatRp(budgetLimit)}`;
   } else { wrapper.style.display = 'none'; }
 
-  // RECENT TRANS
-  const recList = document.getElementById('recentTransactions'); recList.innerHTML = '';
-  const sorted = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).slice(0, 5);
-  
-  if(sorted.length === 0) {
-    recList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat transaksi</p>`;
-  } else {
-    sorted.forEach(item => {
-      recList.innerHTML += `
-        <div class="trans ${item.jenis}" style="padding: 14px; margin-bottom: 10px;">
-          <div class="trans-header">
-            <div class="trans-desc" style="font-size: 0.95rem;">${item.keterangan}</div>
-            <div class="trans-amount ${item.jenis}" style="font-size: 1.05rem;">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
-          </div>
-        </div>`;
-    });
-  }
+  document.getElementById('streakText').textContent = `${calcStreakDays(data)} hari berturut-turut`;
   renderFlowChart();
 }
 
 function renderFlowChart() {
-  const ctx = document.getElementById('flowChart').getContext('2d');
-  if(flowChartInst) flowChartInst.destroy();
-  
+  const canvas = document.getElementById('flowChart');
+  if (!canvas) return;
+  if (canvas.getBoundingClientRect().width < 10) {
+    requestAnimationFrame(renderFlowChart);
+    return;
+  }
+
   const labels =[]; const dataIn =[]; const dataOut =[];
   for(let i=6; i>=0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
-    labels.push(d.toLocaleDateString('id-ID', {day:'numeric', month:'short'}));
+    labels.push(window.innerWidth <= 640 ? d.toLocaleDateString('id-ID', {day:'numeric'}) : d.toLocaleDateString('id-ID', {day:'numeric', month:'short'}));
     const dayData = data.filter(x => x.tanggal === dateStr);
     dataIn.push(dayData.filter(x => x.jenis === 'in').reduce((a,b)=>a+b.nominal, 0));
     dataOut.push(dayData.filter(x => x.jenis === 'out').reduce((a,b)=>a+b.nominal, 0));
   }
-  
-  flowChartInst = new Chart(ctx, { 
-    type: 'line', data: { labels, datasets:[ 
-      { label: 'Pemasukan', data: dataIn, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3 }, 
-      { label: 'Pengeluaran', data: dataOut, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3 } 
-    ]}, 
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: getChartTextColor() } } }, scales: { x: { ticks: { color: getChartTextColor() }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }, y: { ticks: { color: getChartTextColor(), callback: v => 'Rp'+(v/1000)+'k' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } } } } 
-  });
+  drawLineChart(canvas, labels, dataIn, dataOut);
 }
 
 // ────────────────────────────────────────────────
@@ -554,33 +1239,42 @@ function renderFlowChart() {
 // ────────────────────────────────────────────────
 function updateTransactions() {
   const listEl = document.getElementById('listTransaksi');
-  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const searchEl = document.getElementById('searchInput');
+  if (!listEl || !searchEl) return;
+  const search = searchEl.value.toLowerCase().trim();
   listEl.innerHTML = '';
   
-  let filtered = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
-  if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search));
+  let filtered = [...data];
+  if (transSortType === "newest") filtered.sort((a,b)=> (parseDateLocal(b.tanggal)?.getTime()||0)-(parseDateLocal(a.tanggal)?.getTime()||0));
+  else if (transSortType === "oldest") filtered.sort((a,b)=> (parseDateLocal(a.tanggal)?.getTime()||0)-(parseDateLocal(b.tanggal)?.getTime()||0));
+  else if (transSortType === "largest") filtered.sort((a,b)=> b.nominal-a.nominal);
+  if (transFilterType !== 'all') filtered = filtered.filter(i => i.jenis === transFilterType);
+  if(search) filtered = filtered.filter(i => i.keterangan.toLowerCase().includes(search) || i.kategori.toLowerCase().includes(search) || (i.tags || []).some(t => t.toLowerCase().includes(search)));
 
   if (filtered.length === 0) { 
     listEl.innerHTML = `<div style="text-align:center; padding:50px 0; color:var(--text-muted);"><i class="fas fa-search" style="font-size:3rem; opacity:0.3; margin-bottom:10px; display:block;"></i><p>Tidak ditemukan.</p></div>`; return; 
   }
   
   filtered.forEach(item => {
+    const tagsHtml = (item.tags || []).map(t => `<span class="tag-pill">#${escapeHTML(t)}</span>`).join('');
     listEl.innerHTML += `
       <div class="trans ${item.jenis}">
         <div class="trans-header">
-          <div class="trans-desc">${item.keterangan}</div>
+          <div class="trans-desc">${bulkMode ? `<input type="checkbox" onchange="toggleSelectTx(${item.id}, this.checked)">` : ''} ${escapeHTML(item.keterangan)}</div>
           <div class="trans-amount ${item.jenis}">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
         </div>
         <div class="trans-footer">
-          <div><span class="trans-badge">${item.kategori}</span> <span style="margin-left:8px;"><i class="far fa-calendar"></i> ${new Date(item.tanggal).toLocaleDateString('id-ID')}</span></div>
+          <div><span class="trans-badge">${escapeHTML(item.kategori)}</span> <span style="margin-left:8px;"><i class="far fa-calendar"></i> ${parseDateLocal(item.tanggal)?.toLocaleDateString('id-ID') || '-'}</span></div>
           <div class="trans-actions">
             <button class="btn-edit-icon" onclick="editData(${item.id})"><i class="fas fa-edit"></i></button>
             <button class="btn-del-icon" onclick="hapusData(${item.id})"><i class="fas fa-trash"></i></button>
           </div>
         </div>
+        ${tagsHtml ? `<div class="tags-preview">${tagsHtml}</div>` : ''}
       </div>`;
   });
 }
+
 
 function updateFormUI() {
   const jenis = document.querySelector('input[name="jenis"]:checked').value;
@@ -590,6 +1284,7 @@ function updateFormUI() {
   const opts = jenis === 'in' ? customCatIn : customCatOut;
   opts.forEach(kat => { select.innerHTML += `<option value="${kat}">${kat}</option>`; });
   if (opts.includes(oldVal)) select.value = oldVal;
+  renderRecentCategoryChips();
 
   const btn = document.getElementById('btnSubmit');
   if (editId) { btn.className = 'btn btn-warning'; btn.innerHTML = '<i class="fas fa-save"></i> Perbarui'; } 
@@ -601,28 +1296,37 @@ document.getElementById('formKas').addEventListener('submit', (e) => {
   const jenis = document.querySelector('input[name="jenis"]:checked').value;
   const keterangan = document.getElementById('keterangan').value.trim();
   const kategori = document.getElementById('kategori').value;
-  const nominal = parseInt(document.getElementById('nominal').value);
+  const nominal = normalizeNominal(document.getElementById('nominal').value);
   const tanggal = document.getElementById('tanggal').value;
+  const tags = parseTagsInput(document.getElementById('tagsInput').value);
+
+  if (!keterangan || !kategori || !tanggal || !nominal) {
+    showToast('Lengkapi form dengan benar!', 'danger');
+    return;
+  }
 
   if (editId) {
     const idx = data.findIndex(d => d.id === editId);
-    if (idx !== -1) data[idx] = { id: editId, jenis, keterangan, kategori, nominal, tanggal };
+    if (idx !== -1) data[idx] = { id: editId, jenis, keterangan, kategori, nominal, tanggal, tags };
     showToast('Transaksi diperbarui!', 'info'); cancelEdit();
   } else {
-    data.push({ id: Date.now(), jenis, keterangan, kategori, nominal, tanggal });
+    data.push({ id: Date.now(), jenis, keterangan, kategori, nominal, tanggal, tags });
     showToast('Tersimpan!', 'success');
-    document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = '';
+    const btnRect = document.getElementById('btnSubmit').getBoundingClientRect();
+    spawnSparkBurst(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+    if (navigator.vibrate) navigator.vibrate(25);
+    document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tagsInput').value=''; renderTagsPreview();
   }
   save(); 
 });
 
-function hapusData(id) { showConfirm("Hapus Transaksi?", "Yakin hapus data ini?", () => { data = data.filter(d => d.id !== id); save(); showToast('Dihapus', 'danger'); }); }
+function hapusData(id) { showConfirm("Hapus Transaksi?", "Yakin hapus data ini?", () => { const item = data.find(d => d.id === id); if(!item) return; lastDeleted = { ...item }; data = data.filter(d => d.id !== id); save(); showToast('Dihapus', 'danger'); showUndoBar(item); }); }
 
 function editData(id) {
   const item = data.find(d => d.id === id); if (!item) return;
   editId = id; document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Transaksi';
   document.getElementById(item.jenis === 'in' ? 'typeIn' : 'typeOut').checked = true;
-  document.getElementById('keterangan').value = item.keterangan; document.getElementById('tanggal').value = item.tanggal; document.getElementById('nominal').value = item.nominal;
+  document.getElementById('keterangan').value = item.keterangan; document.getElementById('tanggal').value = item.tanggal; document.getElementById('nominal').value = item.nominal; document.getElementById('tagsInput').value = (item.tags || []).join(', '); renderTagsPreview();
   updateFormUI(); document.getElementById('kategori').value = item.kategori;
   document.getElementById('btnCancelEdit').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -630,7 +1334,7 @@ function editData(id) {
 function cancelEdit() {
   editId = null; document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Catat Transaksi';
   document.getElementById('btnCancelEdit').style.display = 'none';
-  document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tanggal').valueAsDate = new Date();
+  document.getElementById('keterangan').value = ''; document.getElementById('nominal').value = ''; document.getElementById('tagsInput').value=''; renderTagsPreview(); document.getElementById('tanggal').valueAsDate = new Date();
   updateFormUI();
 }
 
@@ -641,11 +1345,22 @@ function updateReports() {
   const v = document.getElementById('periodeFilter').value;
   const now = new Date(); let start, end;
   if (v === 'hari') { start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); end = new Date(start); end.setHours(23,59,59); } 
-  else if (v === 'minggu') { start = new Date(now); start.setDate(now.getDate() - now.getDay() + 1); start.setHours(0,0,0,0); end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59); } 
+  else if (v === 'minggu') {
+    const currentDay = now.getDay() || 7;
+    start = new Date(now);
+    start.setDate(now.getDate() - (currentDay - 1));
+    start.setHours(0,0,0,0);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23,59,59);
+  } 
   else if (v === 'bulan') { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23,59,59); } 
   else { start = new Date(2000, 0, 1); end = new Date(2100, 11, 31); }
   
-  const filtered = data.filter(item => { const d = new Date(item.tanggal); return d >= start && d <= end; });
+  const filtered = data.filter(item => {
+    const d = parseDateLocal(item.tanggal);
+    return d && d >= start && d <= end;
+  });
   const masuk = filtered.filter(d => d.jenis === 'in').reduce((a,b) => a + b.nominal, 0);
   const keluar = filtered.filter(d => d.jenis === 'out').reduce((a,b) => a + b.nominal, 0);
   
@@ -655,19 +1370,23 @@ function updateReports() {
   document.getElementById('rekapSelisih').style.color = (masuk - keluar) < 0 ? 'var(--danger)' : 'var(--text)';
   document.getElementById('judulPeriode').textContent = { semua:'Semua Data', hari:'Hari Ini', minggu:'Minggu Ini', bulan:'Bulan Ini' }[v];
 
-  const ctx = document.getElementById('expenseChart').getContext('2d');
-  if(expenseChartInst) expenseChartInst.destroy();
+  const canvas = document.getElementById('expenseChart');
   const filteredOut = filtered.filter(d => d.jenis === 'out');
   const catMap = {}; filteredOut.forEach(item => { catMap[item.kategori] = (catMap[item.kategori] || 0) + item.nominal; });
-  
-  expenseChartInst = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catMap), datasets:[{ data: Object.values(catMap), backgroundColor:['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#3b82f6','#8b5cf6','#ec4899','#64748b'], borderWidth: 0, hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: getChartTextColor(), usePointStyle: true } }, tooltip: { callbacks: { label: function(c) { return ' ' + formatRp(c.raw); } } } } } });
+  drawDoughnutChart(canvas, Object.keys(catMap), Object.values(catMap));
 }
 
 function exportToCSV() {
   if(data.length === 0) { showToast("Tidak ada data", "danger"); return; }
-  let csv = "Tanggal,Jenis,Keterangan,Kategori,Nominal(Rp)\n";
-  data.forEach(r => { csv += `${r.tanggal},${r.jenis==='in'?'Pemasukan':'Pengeluaran'},"${r.keterangan}",${r.kategori},${r.nominal}\n`; });
+  let csv = "Tanggal,Jenis,Keterangan,Kategori,Nominal(Rp),Tags\n";
+  data.forEach(r => { csv += `${r.tanggal},${r.jenis==='in'?'Pemasukan':'Pengeluaran'},"${r.keterangan}",${r.kategori},${r.nominal},"${(r.tags||[]).join('|')}"\n`; });
   const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))); link.setAttribute("download", `Laporan_KasTunai_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); link.remove(); showToast("CSV Diunduh!", "success");
+}
+
+function copySummary() {
+  const teks = `Ringkasan ${document.getElementById('judulPeriode').textContent}: Masuk ${document.getElementById('rekapMasuk').textContent}, Keluar ${document.getElementById('rekapKeluar').textContent}, Selisih ${document.getElementById('rekapSelisih').textContent}`;
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(teks).then(() => showToast('Ringkasan disalin!', 'success')).catch(() => showToast('Gagal menyalin', 'danger'));
+  else showToast('Clipboard tidak didukung', 'danger');
 }
 
 // ────────────────────────────────────────────────
@@ -675,6 +1394,13 @@ function exportToCSV() {
 // ────────────────────────────────────────────────
 function updateSettingsUI() {
   document.getElementById('budgetInput').value = budgetLimit > 0 ? budgetLimit : '';
+  document.getElementById('savingGoalInput').value = savingGoal || '';
+  document.getElementById('reminderTime').value = reminderTime || '20:00';
+  document.getElementById('reminderInfo').textContent = reminderTime ? `Reminder aktif jam ${reminderTime}` : 'Belum diatur.';
+  updateGoalInfo();
+  updateBudgetCategorySelect();
+  renderCategoryBudgetList();
+  renderRecurringList();
   renderCategories();
 }
 
@@ -687,16 +1413,25 @@ function saveBudget() {
 function renderCategories() {
   const inDiv = document.getElementById('listCatIn'); inDiv.innerHTML = '';
   const outDiv = document.getElementById('listCatOut'); outDiv.innerHTML = '';
-  customCatIn.forEach((cat, idx) => { inDiv.innerHTML += `<div class="cat-tag">${cat} <button onclick="delCategory('in', ${idx})"><i class="fas fa-times"></i></button></div>`; });
-  customCatOut.forEach((cat, idx) => { outDiv.innerHTML += `<div class="cat-tag">${cat} <button onclick="delCategory('out', ${idx})"><i class="fas fa-times"></i></button></div>`; });
+  customCatIn.forEach((cat, idx) => { inDiv.innerHTML += `<div class="cat-tag">${escapeHTML(cat)} <button onclick="delCategory('in', ${idx})"><i class="fas fa-times"></i></button></div>`; });
+  customCatOut.forEach((cat, idx) => { outDiv.innerHTML += `<div class="cat-tag">${escapeHTML(cat)} <button onclick="delCategory('out', ${idx})"><i class="fas fa-times"></i></button></div>`; });
   updateFormUI();
 }
 
 function addCategory(jenis) {
   const input = document.getElementById(jenis === 'in' ? 'newCatIn' : 'newCatOut');
-  const val = input.value.trim(); if(!val) return;
-  if(jenis === 'in') { if(customCatIn.includes(val)) return showToast('Sudah ada!', 'danger'); customCatIn.push(val); localStorage.setItem('katIn', JSON.stringify(customCatIn)); } 
-  else { if(customCatOut.includes(val)) return showToast('Sudah ada!', 'danger'); customCatOut.push(val); localStorage.setItem('katOut', JSON.stringify(customCatOut)); }
+  const val = input.value.trim();
+  if(!val) return;
+  const normalizedVal = val.toLowerCase();
+  if(jenis === 'in') {
+    if(customCatIn.some(item => item.toLowerCase() === normalizedVal)) return showToast('Sudah ada!', 'danger');
+    customCatIn.push(val);
+    localStorage.setItem('katIn', JSON.stringify(customCatIn));
+  } else {
+    if(customCatOut.some(item => item.toLowerCase() === normalizedVal)) return showToast('Sudah ada!', 'danger');
+    customCatOut.push(val);
+    localStorage.setItem('katOut', JSON.stringify(customCatOut));
+  }
   input.value = ''; renderCategories(); showToast('Ditambahkan');
 }
 
@@ -707,7 +1442,7 @@ function delCategory(jenis, index) {
 }
 
 function backupData() {
-  const backupObj = { data: data, customCatIn: customCatIn, customCatOut: customCatOut, budgetLimit: budgetLimit };
+  const backupObj = { data: data, customCatIn: customCatIn, customCatOut: customCatOut, budgetLimit: budgetLimit, templates, recurringRules, categoryBudgets, savingGoal, reminderTime };
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
   const link = document.createElement("a"); link.setAttribute("href", dataStr); link.setAttribute("download", `Backup_KasTunai_${new Date().toISOString().split('T')[0]}.json`);
   document.body.appendChild(link); link.click(); link.remove(); showToast('Backup Diunduh!');
@@ -718,10 +1453,28 @@ function restoreData(event) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const parsed = JSON.parse(e.target.result); if(!parsed.data) throw new Error();
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.data) throw new Error();
+      const restoredData = (parsed.data || []).map(normalizeTransaction).filter(Boolean);
+      const restoredCatIn = sanitizeCategoryList(parsed.customCatIn || customCatIn, defaultCatIn);
+      const restoredCatOut = sanitizeCategoryList(parsed.customCatOut || customCatOut, defaultCatOut);
+      const restoredBudget = Math.max(0, parseInt(parsed.budgetLimit, 10) || 0);
+      const restoredTemplates = Array.isArray(parsed.templates) ? parsed.templates : templates;
+      const restoredRecurring = Array.isArray(parsed.recurringRules) ? parsed.recurringRules : recurringRules;
+      const restoredCatBudget = parsed.categoryBudgets && typeof parsed.categoryBudgets === 'object' ? parsed.categoryBudgets : categoryBudgets;
+      const restoredGoal = Math.max(0, parseInt(parsed.savingGoal, 10) || 0);
+      const restoredReminder = typeof parsed.reminderTime === 'string' ? parsed.reminderTime : reminderTime;
       showConfirm("Peringatan Restore!", "Data Anda akan ditimpa dengan file ini. Lanjut?", () => {
-        data = parsed.data; customCatIn = parsed.customCatIn || customCatIn; customCatOut = parsed.customCatOut || customCatOut; budgetLimit = parsed.budgetLimit || 0;
-        localStorage.setItem('kasBukuTunai', JSON.stringify(data)); localStorage.setItem('katIn', JSON.stringify(customCatIn)); localStorage.setItem('katOut', JSON.stringify(customCatOut)); localStorage.setItem('kasBudget', budgetLimit);
+        data = restoredData;
+        customCatIn = restoredCatIn;
+        customCatOut = restoredCatOut;
+        budgetLimit = restoredBudget;
+        templates = restoredTemplates;
+        recurringRules = restoredRecurring;
+        categoryBudgets = restoredCatBudget;
+        savingGoal = restoredGoal;
+        reminderTime = restoredReminder;
+        localStorage.setItem('kasBukuTunai', JSON.stringify(data)); localStorage.setItem('katIn', JSON.stringify(customCatIn)); localStorage.setItem('katOut', JSON.stringify(customCatOut)); localStorage.setItem('kasBudget', budgetLimit); localStorage.setItem('txTemplates', JSON.stringify(templates)); localStorage.setItem('recurringRules', JSON.stringify(recurringRules)); localStorage.setItem('categoryBudgets', JSON.stringify(categoryBudgets)); localStorage.setItem('savingGoal', savingGoal); localStorage.setItem('reminderTime', reminderTime);
         showToast('Restore Berhasil!', 'success'); setTimeout(() => location.reload(), 1500);
       });
     } catch(err) { showToast('File tidak valid!', 'danger'); }
@@ -731,17 +1484,140 @@ function restoreData(event) {
 
 function confirmClearAll() {
   showConfirm("HAPUS PERMANEN?", "Semua data akan hilang selamanya!", () => {
-    localStorage.clear(); showToast('Data dihapus...', 'danger'); setTimeout(() => location.reload(), 1000);
+    localStorage.removeItem('kasBukuTunai');
+    localStorage.removeItem('katIn');
+    localStorage.removeItem('katOut');
+    localStorage.removeItem('kasBudget');
+    localStorage.removeItem('txTemplates');
+    localStorage.removeItem('recurringRules');
+    localStorage.removeItem('categoryBudgets');
+    localStorage.removeItem('savingGoal');
+    localStorage.removeItem('reminderTime');
+    showToast('Data dihapus...', 'danger');
+    setTimeout(() => location.reload(), 1000);
   });
 }
 
 // INIT LISTENERS
 document.getElementById('typeIn').addEventListener('change', updateFormUI);
 document.getElementById('typeOut').addEventListener('change', updateFormUI);
+document.getElementById('transSort').addEventListener('change', (e) => { transSortType = e.target.value; updateTransactions(); });
+document.getElementById('keterangan').addEventListener('input', (e) => { document.getElementById('ketCounter').textContent = `${e.target.value.length}/60`; });
+document.getElementById('tagsInput').addEventListener('input', renderTagsPreview);
+document.getElementById('budgetCatType').addEventListener('change', updateBudgetCategorySelect);
+
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+const offlineBadge = document.getElementById('offlineBadge');
+
+function updateOnlineStatus() {
+  offlineBadge.style.display = navigator.onLine ? 'none' : 'inline-flex';
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (document.getElementById('view-dashboard').classList.contains('active')) renderFlowChart();
+    if (document.getElementById('view-history').classList.contains('active')) updateTransactions();
+    if (document.getElementById('view-reports').classList.contains('active')) updateReports();
+  }, 150);
+});
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-flex';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      showToast('Service Worker gagal didaftarkan', 'danger');
+    });
+  });
+}
+
+
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('.btn, .nav-btn, .theme-toggle, .fab, .install-btn, .chip-btn');
+  if (!target) return;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const rect = target.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = `${size}px`;
+  ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+  ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+  target.appendChild(ripple);
+  target.classList.remove('wiggle');
+  requestAnimationFrame(() => target.classList.add('wiggle'));
+  setTimeout(() => ripple.remove(), 520);
+  setTimeout(() => target.classList.remove('wiggle'), 380);
+});
+
+window.addEventListener('keydown', (e) => {
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === '/') {
+    e.preventDefault();
+    switchTab('history');
+    document.getElementById('searchInput')?.focus();
+  }
+  if (e.key.toLowerCase() === 'n') {
+    switchTab('transactions');
+    document.getElementById('keterangan')?.focus();
+  }
+});
+
+document.querySelectorAll('.card, .section-card, .widget').forEach(card => {
+  card.addEventListener('pointermove', (e) => {
+    if (window.innerWidth < 768) return;
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    card.style.transform = `perspective(900px) rotateX(${(-y * 4).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg) translateY(-2px)`;
+  });
+  card.addEventListener('pointerleave', () => {
+    card.style.transform = '';
+  });
+});
+
+
+document.querySelectorAll('input, select, textarea').forEach(el => {
+  el.addEventListener('focus', () => {
+    const wrap = el.closest('.form-group');
+    if (!wrap) return;
+    wrap.classList.remove('wiggle');
+    requestAnimationFrame(() => wrap.classList.add('wiggle'));
+    setTimeout(() => wrap.classList.remove('wiggle'), 350);
+  });
+});
 
 // FIRST LOAD
+const initialActiveTab = document.querySelector('.view-section.active')?.id?.replace('view-','') || 'dashboard';
+switchTab(initialActiveTab);
 updateFormUI();
 updateDashboard();
+updateOnlineStatus();
+applySectionAnimation();
+renderTemplateList();
+updateBudgetCategorySelect();
+renderCategoryBudgetList();
+renderRecurringList();
+runRecurringAuto();
+setInterval(checkReminderTick, 60000);
+
 </script>
 </body>
 </html>

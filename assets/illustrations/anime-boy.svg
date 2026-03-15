@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Anime boy illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="320" rx="36" fill="url(#bg)"/>
+  <circle cx="160" cy="148" r="70" fill="#fde68a" stroke="#0f172a" stroke-width="6"/>
+  <path d="M95 130c8-46 40-76 84-76 32 0 56 15 73 44l-21 7 7 18-25-4-10 14-18-12-17 14-10-15-18 8z" fill="url(#hair)" stroke="#0f172a" stroke-width="6" stroke-linejoin="round"/>
+  <ellipse cx="135" cy="148" rx="10" ry="12" fill="#0f172a"/>
+  <ellipse cx="186" cy="148" rx="10" ry="12" fill="#0f172a"/>
+  <circle cx="132" cy="145" r="3" fill="#fff"/>
+  <circle cx="183" cy="145" r="3" fill="#fff"/>
+  <path d="M138 186c8 9 34 9 42 0" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M95 232c11-22 35-33 65-33s53 11 65 33v58H95z" fill="#1d4ed8" stroke="#0f172a" stroke-width="6"/>
+  <path d="M143 199h34l-6 18h-22z" fill="#e2e8f0" stroke="#0f172a" stroke-width="4"/>
+  <path d="M115 266h90" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="248" cy="64" r="26" fill="#fff" fill-opacity=".2"/>
+  <circle cx="72" cy="82" r="18" fill="#fff" fill-opacity=".2"/>
+</svg>
