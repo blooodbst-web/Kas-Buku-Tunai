@@ -50,7 +50,7 @@
     .bottom-nav .nav-links { flex-direction: row; justify-content: space-between; gap: 0; width: 100%; display: flex; }
     .bottom-nav .nav-btn { flex-direction: column; gap: 6px; padding: 10px 4px; font-size: 0.75rem; text-align: center; border-radius: 12px; flex: 1; justify-content: center; align-items: center; }
     .bottom-nav .nav-btn i { font-size: 1.4rem; margin: 0; }
-    .bottom-nav .nav-btn span { display: block; font-size: 0.7rem; font-weight: 600; } /* FIX BUG TEKS HILANG */
+    .bottom-nav .nav-btn span { display: block; font-size: 0.66rem; font-weight: 700; } /* FIX BUG TEKS HILANG */
     .bottom-nav .nav-btn.active { background: transparent; color: var(--accent); box-shadow: none; }
     
     .main-content { flex: 1; margin-left: 260px; padding: 40px; max-width: 1200px; transition: 0.3s; }
@@ -172,6 +172,7 @@
     .btn-del-icon { color: var(--danger); } .btn-del-icon:hover { background: rgba(239, 68, 68, 0.1); }
 
     .chart-box { position: relative; height: 300px; width: 100%; margin-top: 20px; }
+    .chart-box.compact { height: 250px; }
     .chart-box canvas { display:block; width:100% !important; height:100% !important; max-width:100%; border-radius: 12px; }
     
     /* Toast & Modal */
@@ -189,7 +190,7 @@
     .modal-overlay.active .modal { transform: scale(1); }
 
     /* FAB Mobile - DIPERBAIKI */
-    .fab { display: none; position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s; animation: fabPulse 2.2s infinite;}
+    .fab { display: none; position: fixed; bottom: calc(96px + env(safe-area-inset-bottom)); right: 18px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; border: none; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); z-index: 99; cursor: pointer; transition: 0.2s; animation: fabPulse 2.2s infinite;}
     @keyframes fabPulse { 0%,100% { box-shadow: 0 8px 20px rgba(96,165,250,.4);} 50% { box-shadow: 0 10px 26px rgba(96,165,250,.7);} }
     .fab:active { transform: scale(0.9); }
     .fab i { animation: bob 1.8s ease-in-out infinite; }
@@ -235,7 +236,7 @@
       .bottom-nav { display: flex; }
       
       /* FIX PADDING MOBILE SUPAYA TIDAK KAKU DAN MEPET */
-      .main-content { margin-left: 0; padding: 24px 20px; padding-bottom: 120px; }
+      .main-content { margin-left: 0; padding: 24px 20px; padding-bottom: 132px; }
       
       header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 24px;} 
       .header-actions { position: absolute; top: 20px; right: 20px; }
@@ -248,6 +249,8 @@
       .card .amount { font-size: 1.8rem; }
       .image-badges { gap: 8px; }
       .img-badge { width: 100%; }
+      .chart-box { height: 250px; }
+      .chart-box.compact { height: 220px; }
     }
   </style>
 </head>
@@ -260,6 +263,7 @@
     <div class="nav-links">
       <button class="nav-btn active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i> <span>Dashboard</span></button>
       <button class="nav-btn" onclick="switchTab('transactions')"><i class="fas fa-exchange-alt"></i> <span>Transaksi</span></button>
+      <button class="nav-btn" onclick="switchTab('history')"><i class="fas fa-clock"></i> <span>Riwayat</span></button>
       <button class="nav-btn" onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> <span>Laporan</span></button>
       <button class="nav-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>Pengaturan</span></button>
     </div>
@@ -270,6 +274,7 @@
     <div class="nav-links">
       <button class="nav-btn active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i> <span>Home</span></button>
       <button class="nav-btn" onclick="switchTab('transactions')"><i class="fas fa-exchange-alt"></i> <span>Catat</span></button>
+      <button class="nav-btn" onclick="switchTab('history')"><i class="fas fa-clock"></i> <span>Riwayat</span></button>
       <button class="nav-btn" onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> <span>Laporan</span></button>
       <button class="nav-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>Setting</span></button>
     </div>
@@ -330,10 +335,7 @@
         <div class="widget"><small><i class="fas fa-bullseye"></i> Skor Keuangan</small><strong id="scoreText">0/100</strong></div>
       </div>
 
-      <div class="grid-2">
-        <div class="section-card"><h2 class="section-title"><i class="fas fa-chart-line"></i> Arus Kas (7 Hari)</h2><div class="chart-box"><canvas id="flowChart"></canvas></div></div>
-        <div class="section-card"><h2 class="section-title"><i class="fas fa-clock"></i> Transaksi Terakhir</h2><div id="recentTransactions" class="history-container" style="max-height: 350px;"></div></div>
-      </div>
+      <div class="section-card"><h2 class="section-title"><i class="fas fa-chart-line"></i> Arus Kas (7 Hari)</h2><div class="chart-box"><canvas id="flowChart"></canvas></div></div>
     </div>
 
     <!-- ================= VIEW 2: TRANSAKSI ================= -->
@@ -371,15 +373,32 @@
           </form>
         </div>
         <div class="section-card">
-          <h2 class="section-title"><i class="fas fa-list"></i> Riwayat Transaksi</h2>
-          <div class="chip-row" style="margin-bottom:12px;">
-            <button class="chip-btn active" id="filter-all" onclick="setTransFilter('all')">Semua</button>
-            <button class="chip-btn" id="filter-in" onclick="setTransFilter('in')">Pemasukan</button>
-            <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
+          <h2 class="section-title"><i class="fas fa-lightbulb"></i> Cepat & Interaktif</h2>
+          <p style="color:var(--text-muted);margin-bottom:10px;line-height:1.6">Riwayat transaksi sekarang dipisah ke tab <strong>Riwayat</strong> supaya halaman Catat lebih fokus dan ringan.</p>
+          <div class="kpi-grid">
+            <div class="kpi"><strong>💡 Tip #1</strong><div class="helper-text">Gunakan template untuk transaksi rutin agar input lebih cepat.</div></div>
+            <div class="kpi"><strong>🏷️ Tip #2</strong><div class="helper-text">Tambahkan tag seperti #makan, #transport supaya pencarian di tab Riwayat lebih mudah.</div></div>
+            <div class="kpi"><strong>🔁 Tip #3</strong><div class="helper-text">Aktifkan transaksi berulang dari Pengaturan untuk catatan otomatis.</div></div>
           </div>
-          <div class="mini-actions"><select id="transSort" style="max-width:170px"><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="largest">Nominal Tertinggi</option></select><button class="tiny-btn" type="button" onclick="resetTransControls()">Reset Filter</button></div><div style="margin-bottom: 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori..." oninput="updateTransactions()"></div>
-          <div class="mini-actions"><button class="tiny-btn" type="button" onclick="toggleBulkMode()">Mode Bulk</button><button class="tiny-btn" type="button" onclick="bulkDelete()">Hapus Terpilih</button></div><div class="list-mini" id="templateList"></div><div class="history-container" id="listTransaksi"></div>
+          <button class="btn btn-outline" style="margin-top:16px" onclick="switchTab('history')"><i class="fas fa-clock"></i> Buka Tab Riwayat</button>
+          <div class="list-mini" id="templateList"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 3: RIWAYAT ================= -->
+    <div id="view-history" class="view-section">
+      <div class="section-card">
+        <h2 class="section-title"><i class="fas fa-clock"></i> Riwayat Transaksi</h2>
+        <div class="chip-row" style="margin-bottom:12px;">
+          <button class="chip-btn active" id="filter-all" onclick="setTransFilter('all')">Semua</button>
+          <button class="chip-btn" id="filter-in" onclick="setTransFilter('in')">Pemasukan</button>
+          <button class="chip-btn" id="filter-out" onclick="setTransFilter('out')">Pengeluaran</button>
+        </div>
+        <div class="mini-actions"><select id="transSort" style="max-width:170px"><option value="newest">Terbaru</option><option value="oldest">Terlama</option><option value="largest">Nominal Tertinggi</option></select><button class="tiny-btn" type="button" onclick="resetTransControls()">Reset Filter</button></div>
+        <div style="margin:12px 0 16px;"><input type="search" id="searchInput" placeholder="🔍 Cari keterangan / kategori / tag..." oninput="updateTransactions()"></div>
+        <div class="mini-actions"><button class="tiny-btn" type="button" onclick="toggleBulkMode()">Mode Bulk</button><button class="tiny-btn" type="button" onclick="bulkDelete()">Hapus Terpilih</button></div>
+        <div class="history-container" id="listTransaksi"></div>
       </div>
     </div>
 
@@ -397,7 +416,7 @@
           </select>
         </div>
         <div class="grid-2">
-          <div><h3 style="margin-bottom: 10px;">Distribusi Pengeluaran</h3><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi distribusi" style="width:128px;display:block;margin-bottom:10px;filter: drop-shadow(0 6px 10px rgba(16,185,129,.22));"><div class="chart-box"><canvas id="expenseChart"></canvas></div></div>
+          <div><h3 style="margin-bottom: 10px;">Distribusi Pengeluaran</h3><img src="assets/illustrations/chart-blob.svg" alt="Ilustrasi distribusi" style="width:128px;display:block;margin-bottom:10px;filter: drop-shadow(0 6px 10px rgba(16,185,129,.22));"><div class="chart-box compact"><canvas id="expenseChart"></canvas></div></div>
           <div>
             <div style="background: var(--input-bg); padding: 24px; border-radius: 20px; border: 1px solid var(--card-border); text-align: center; margin-bottom: 20px;">
               <p style="color:var(--text-muted); margin-bottom:10px; font-weight: 500;">Selisih Keuangan (<span id="judulPeriode">Bulan Ini</span>)</p>
@@ -620,8 +639,8 @@ function switchTab(tabId) {
   document.getElementById('view-' + tabId).classList.add('active');
 
   const fab = document.querySelector('.fab');
-  if (tabId === 'transactions') fab.style.display = 'none';
-  else if (window.innerWidth <= 640) fab.style.display = 'flex';
+  if (tabId === 'dashboard' && window.innerWidth <= 640) fab.style.display = 'flex';
+  else fab.style.display = 'none';
 
   refreshCurrentView();
   applySectionAnimation();
@@ -729,10 +748,13 @@ function drawLineChart(canvas, labels, inVals, outVals) {
   }
 
   ctx.fillStyle = getChartTextColor();
-  ctx.font = '11px Inter, sans-serif';
+  const isMobile = width < 420;
+  ctx.font = isMobile ? '10px Inter, sans-serif' : '11px Inter, sans-serif';
   labels.forEach((lb, i) => {
+    if (isMobile && (i % 2 === 1)) return;
     const x = pad.left + (innerW * i / (labels.length - 1 || 1));
-    ctx.fillText(lb, x - 12, height - 8);
+    const safeX = Math.max(2, Math.min(width - 28, x - (isMobile ? 6 : 12)));
+    ctx.fillText(lb, safeX, height - 8);
   });
 }
 
@@ -1135,7 +1157,7 @@ document.getElementById('modalConfirmBtn').addEventListener('click', () => { if(
 
 function refreshCurrentView() {
   if(document.getElementById('view-dashboard').classList.contains('active')) updateDashboard();
-  if(document.getElementById('view-transactions').classList.contains('active')) updateTransactions();
+  if(document.getElementById('view-history').classList.contains('active')) updateTransactions();
   if(document.getElementById('view-reports').classList.contains('active')) updateReports();
   if(document.getElementById('view-settings').classList.contains('active')) updateSettingsUI();
 }
@@ -1186,30 +1208,7 @@ function updateDashboard() {
     document.getElementById('budgetLimit').textContent = `Limit: ${formatRp(budgetLimit)}`;
   } else { wrapper.style.display = 'none'; }
 
-  // RECENT TRANS
-  const recList = document.getElementById('recentTransactions'); recList.innerHTML = '';
   document.getElementById('streakText').textContent = `${calcStreakDays(data)} hari berturut-turut`;
-  const sorted = [...data].sort((a, b) => {
-    const dA = parseDateLocal(a.tanggal);
-    const dB = parseDateLocal(b.tanggal);
-    return (dB?.getTime() || 0) - (dA?.getTime() || 0);
-  }).slice(0, 5);
-  
-  if(sorted.length === 0) {
-    recList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat transaksi</p>`;
-  } else {
-    const streak = calcStreakDays(data);
-    document.getElementById('streakText').textContent = `${streak} hari berturut-turut`;
-    sorted.forEach(item => {
-      recList.innerHTML += `
-        <div class="trans ${item.jenis}" style="padding: 14px; margin-bottom: 10px;">
-          <div class="trans-header">
-            <div class="trans-desc" style="font-size: 0.95rem;">${escapeHTML(item.keterangan)}</div>
-            <div class="trans-amount ${item.jenis}" style="font-size: 1.05rem;">${item.jenis==='in'?'+':'-'} ${formatRp(item.nominal)}</div>
-          </div>
-        </div>`;
-    });
-  }
   renderFlowChart();
 }
 
@@ -1227,7 +1226,7 @@ function renderFlowChart() {
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
-    labels.push(d.toLocaleDateString('id-ID', {day:'numeric', month:'short'}));
+    labels.push(window.innerWidth <= 640 ? d.toLocaleDateString('id-ID', {day:'numeric'}) : d.toLocaleDateString('id-ID', {day:'numeric', month:'short'}));
     const dayData = data.filter(x => x.tanggal === dateStr);
     dataIn.push(dayData.filter(x => x.jenis === 'in').reduce((a,b)=>a+b.nominal, 0));
     dataOut.push(dayData.filter(x => x.jenis === 'out').reduce((a,b)=>a+b.nominal, 0));
@@ -1240,7 +1239,9 @@ function renderFlowChart() {
 // ────────────────────────────────────────────────
 function updateTransactions() {
   const listEl = document.getElementById('listTransaksi');
-  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const searchEl = document.getElementById('searchInput');
+  if (!listEl || !searchEl) return;
+  const search = searchEl.value.toLowerCase().trim();
   listEl.innerHTML = '';
   
   let filtered = [...data];
@@ -1273,6 +1274,7 @@ function updateTransactions() {
       </div>`;
   });
 }
+
 
 function updateFormUI() {
   const jenis = document.querySelector('input[name="jenis"]:checked').value;
@@ -1519,6 +1521,7 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     if (document.getElementById('view-dashboard').classList.contains('active')) renderFlowChart();
+    if (document.getElementById('view-history').classList.contains('active')) updateTransactions();
     if (document.getElementById('view-reports').classList.contains('active')) updateReports();
   }, 150);
 });
@@ -1568,7 +1571,7 @@ window.addEventListener('keydown', (e) => {
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
   if (e.key === '/') {
     e.preventDefault();
-    switchTab('transactions');
+    switchTab('history');
     document.getElementById('searchInput')?.focus();
   }
   if (e.key.toLowerCase() === 'n') {
@@ -1602,6 +1605,8 @@ document.querySelectorAll('input, select, textarea').forEach(el => {
 });
 
 // FIRST LOAD
+const initialActiveTab = document.querySelector('.view-section.active')?.id?.replace('view-','') || 'dashboard';
+switchTab(initialActiveTab);
 updateFormUI();
 updateDashboard();
 updateOnlineStatus();
